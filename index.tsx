@@ -1,6 +1,8 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
+import { I18nProvider } from './lib/i18n';
+import { LanguageSelector } from './components/LanguageSelector';
 import './index.css';
 
 // Ensure no stale service worker is serving cached assets.
@@ -20,6 +22,9 @@ if (!rootElement) {
 const root = ReactDOM.createRoot(rootElement);
 root.render(
   <React.StrictMode>
-    <App />
+    <I18nProvider>
+      <App />
+      <LanguageSelector />
+    </I18nProvider>
   </React.StrictMode>
 );

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useI18n } from "../lib/i18n";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
@@ -18,6 +19,7 @@ interface CustomerDirectoryProps {
 
 export const CustomerDirectory: React.FC<CustomerDirectoryProps> = ({ customers, setCustomers, readOnly = false, refreshData }) => {
   const { currentOwner, activeBusiness } = useAuth();
+  const { t, locale } = useI18n();
   const [searchQuery, setSearchQuery] = useState("");
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
   const [isAddOpen, setIsAddOpen] = useState(false);
@@ -47,7 +49,7 @@ export const CustomerDirectory: React.FC<CustomerDirectoryProps> = ({ customers,
       }
       setEditingCustomer(null);
     } else {
-      setError(result.error ?? "Unable to update this customer right now.");
+      setError(result.error ?? t("Unable to update this customer right now."));
     }
   };
 
@@ -78,7 +80,7 @@ export const CustomerDirectory: React.FC<CustomerDirectoryProps> = ({ customers,
       setIsAddOpen(false);
       setFormData({ name: '', email: '', mobile: '' });
     } else {
-      setError(result.error ?? "Unable to create this customer right now.");
+      setError(result.error ?? t("Unable to create this customer right now."));
     }
   };
 
@@ -86,12 +88,12 @@ export const CustomerDirectory: React.FC<CustomerDirectoryProps> = ({ customers,
     <div className="p-4 md:p-8 space-y-6 animate-fade-in h-full flex flex-col bg-gray-50/50">
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground">Customers</h1>
-          <p className="text-muted-foreground">Manage your customer database.</p>
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground">{t("Customers")}</h1>
+          <p className="text-muted-foreground">{t("Manage your customer database.")}</p>
         </div>
         {!readOnly && (
           <Button onClick={() => { setFormData({ name: '', email: '', mobile: '' }); setIsAddOpen(true); }} className="gap-2 rounded-full shadow-sm w-full sm:w-auto">
-            <UserPlus size={16} /> Add Customer
+            <UserPlus size={16} /> {t("Add Customer")}
           </Button>
         )}
       </div>
@@ -100,7 +102,7 @@ export const CustomerDirectory: React.FC<CustomerDirectoryProps> = ({ customers,
         <Search className="text-gray-400" size={20} />
         <Input
           className="flex-1 border-none shadow-none focus-visible:ring-0 px-0"
-          placeholder="Search customers..."
+          placeholder={t("Search customers...")}
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
         />
@@ -116,15 +118,15 @@ export const CustomerDirectory: React.FC<CustomerDirectoryProps> = ({ customers,
         <Table>
           <TableHeader>
             <TableRow className="bg-muted/30">
-              <TableHead>Name</TableHead>
-              <TableHead>Contact Info</TableHead>
-              <TableHead className="text-center">Active Cards</TableHead>
-              <TableHead className="text-right">Action</TableHead>
+              <TableHead>{t("Name")}</TableHead>
+              <TableHead>{t("Contact Info")}</TableHead>
+              <TableHead className="text-center">{t("Active Cards")}</TableHead>
+              <TableHead className="text-right">{t("Action")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filteredCustomers.length === 0 ? (
-              <TableRow><TableCell colSpan={4} className="text-center h-24">No customers found.</TableCell></TableRow>
+              <TableRow><TableCell colSpan={4} className="text-center h-24">{t("No customers found.")}</TableCell></TableRow>
             ) : (
               filteredCustomers.map(customer => (
                 <TableRow key={customer.id} className="hover:bg-muted/30">
@@ -167,28 +169,28 @@ export const CustomerDirectory: React.FC<CustomerDirectoryProps> = ({ customers,
 
       <Dialog open={!readOnly && !!editingCustomer} onOpenChange={(o) => !o && !busy && setEditingCustomer(null)}>
         <DialogContent>
-          <DialogHeader><DialogTitle>Edit Customer</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{t("Edit Customer")}</DialogTitle></DialogHeader>
           <div className="space-y-4 py-4">
-            <div className="grid gap-2"><Label>Name</Label><Input value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} /></div>
-            <div className="grid gap-2"><Label>Email</Label><Input value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} /></div>
-            <div className="grid gap-2"><Label>Mobile</Label><Input value={formData.mobile} onChange={e => setFormData({ ...formData, mobile: e.target.value })} /></div>
+            <div className="grid gap-2"><Label>{t("Name")}</Label><Input value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} /></div>
+            <div className="grid gap-2"><Label>{t("Email")}</Label><Input value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} /></div>
+            <div className="grid gap-2"><Label>{t("Mobile")}</Label><Input value={formData.mobile} onChange={e => setFormData({ ...formData, mobile: e.target.value })} /></div>
           </div>
           <DialogFooter>
-            <Button onClick={handleSaveEdit} disabled={busy}>{busy ? "Saving..." : "Save Changes"}</Button>
+            <Button onClick={handleSaveEdit} disabled={busy}>{busy ? t("Saving...") : t("Save Changes")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       <Dialog open={!readOnly && isAddOpen} onOpenChange={(open) => !busy && setIsAddOpen(open)}>
         <DialogContent>
-          <DialogHeader><DialogTitle>Add Customer</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{t("Add Customer")}</DialogTitle></DialogHeader>
           <div className="space-y-4 py-4">
-            <div className="grid gap-2"><Label>Name</Label><Input value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} /></div>
-            <div className="grid gap-2"><Label>Email</Label><Input value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} /></div>
-            <div className="grid gap-2"><Label>Mobile</Label><Input value={formData.mobile} onChange={e => setFormData({ ...formData, mobile: e.target.value })} /></div>
+            <div className="grid gap-2"><Label>{t("Name")}</Label><Input value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} /></div>
+            <div className="grid gap-2"><Label>{t("Email")}</Label><Input value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} /></div>
+            <div className="grid gap-2"><Label>{t("Mobile")}</Label><Input value={formData.mobile} onChange={e => setFormData({ ...formData, mobile: e.target.value })} /></div>
           </div>
           <DialogFooter>
-            <Button onClick={handleAddCustomer} disabled={!formData.name || busy}>{busy ? "Creating..." : "Create Customer"}</Button>
+            <Button onClick={handleAddCustomer} disabled={!formData.name || busy}>{busy ? t("Creating...") : t("Create Customer")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

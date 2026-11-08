@@ -4,6 +4,7 @@ import { ArrowLeft, ShieldCheck } from "lucide-react";
 import { Button } from "./ui/button";
 import { PublicFooter } from "./PublicFooter";
 import { SUPPORT_EMAIL } from "../lib/siteConfig";
+import { useI18n } from "../lib/i18n";
 
 const sections = [
   {
@@ -39,11 +40,16 @@ const sections = [
   {
     title: "Your choices",
     body:
-      `Business owners can review and update core account and campaign information inside the product. If you need help with privacy-related requests, email ${SUPPORT_EMAIL}.`,
+      "Business owners can review and update core account and campaign information inside the product. If you need help with privacy-related requests, email {email}.",
   },
 ];
 
 export const PrivacyPolicyPage: React.FC = () => {
+  const { t, locale } = useI18n();
+  const updatedDate = new Intl.DateTimeFormat(locale, { year: "numeric", month: "long", day: "numeric" }).format(
+    new Date("2026-03-03T00:00:00Z"),
+  );
+
   return (
     <div className="min-h-screen bg-white text-[#1d1d1f]">
       <header className="fixed top-0 z-30 w-full border-b border-black/[0.06] bg-white/78 backdrop-blur-2xl">
@@ -54,7 +60,7 @@ export const PrivacyPolicyPage: React.FC = () => {
           <Button asChild variant="ghost" className="rounded-full text-sm text-[#1d1d1f] hover:bg-black/[0.05]">
             <Link to="/">
               <ArrowLeft className="mr-2 h-4 w-4" />
-              Home
+              {t("Home")}
             </Link>
           </Button>
         </div>
@@ -66,13 +72,13 @@ export const PrivacyPolicyPage: React.FC = () => {
             <div className="max-w-[48rem]">
               <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/12 px-4 py-2 text-[0.72rem] font-semibold uppercase tracking-[0.22em] text-white/88">
                 <ShieldCheck className="h-3.5 w-3.5" />
-                Privacy Policy
+                {t("Privacy Policy")}
               </div>
               <h1 className="mt-6 text-[clamp(2.8rem,5.4vw,5.2rem)] font-black leading-[0.92] tracking-[-0.05em] text-white">
-                How Stampee handles account, loyalty, and customer data.
+                {t("How Stampee handles account, loyalty, and customer data.")}
               </h1>
               <p className="mt-6 max-w-[38rem] text-[clamp(1rem,1.35vw,1.16rem)] leading-8 text-white/82">
-                Last updated March 3, 2026.
+                {t("Last updated {date}.", { date: updatedDate })}
               </p>
             </div>
           </div>
@@ -83,46 +89,40 @@ export const PrivacyPolicyPage: React.FC = () => {
             <div className="space-y-6">
               <div className="bg-white px-6 py-2 sm:px-8 sm:py-2">
                 <h2 className="text-[clamp(1.6rem,2.5vw,2.4rem)] font-semibold tracking-tight text-[#1d1d1f]">
-                  Overview
+                  {t("Overview")}
                 </h2>
                 <p className="mt-4 text-base leading-8 text-[#50545a]">
-                  This page explains the categories of information Stampee processes, why that information is used,
-                  and the general safeguards applied when operating the platform. It is intended as a clear public
-                  summary for business owners and visitors using Stampee.
+                  {t("This page explains the categories of information Stampee processes, why that information is used, and the general safeguards applied when operating the platform. It is intended as a clear public summary for business owners and visitors using Stampee.")}
                 </p>
               </div>
 
               {sections.map((section) => (
-                <article
-                  key={section.title}
-                  className="bg-white px-6 py-2 sm:px-8 sm:py-2"
-                >
+                <article key={section.title} className="bg-white px-6 py-2 sm:px-8 sm:py-2">
                   <h2 className="text-[clamp(1.5rem,2.3vw,2.2rem)] font-semibold leading-[1.02] tracking-tight text-[#1d1d1f]">
-                    {section.title}
+                    {t(section.title)}
                   </h2>
-                  <p className="mt-4 text-base leading-8 text-[#50545a]">{section.body}</p>
+                  <p className="mt-4 text-base leading-8 text-[#50545a]">
+                    {t(section.body, section.title === "Your choices" ? { email: SUPPORT_EMAIL } : undefined)}
+                  </p>
                 </article>
               ))}
             </div>
 
             <aside className="space-y-5 lg:sticky lg:top-24 lg:self-start">
               <div className="bg-white px-6 py-2 text-[#1d1d1f]">
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#1d1d1f]">Policy summary</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#1d1d1f]">{t("Policy summary")}</p>
                 <ul className="mt-5 space-y-3 text-sm leading-6 text-[#50545a]">
-                  <li>Used to run accounts, cards, campaigns, and customer activity.</li>
-                  <li>Not sold as personal information.</li>
-                  <li>Shared only with service providers needed to operate Stampee.</li>
-                  <li>Protected with reasonable operational and technical safeguards.</li>
+                  <li>{t("Used to run accounts, cards, campaigns, and customer activity.")}</li>
+                  <li>{t("Not sold as personal information.")}</li>
+                  <li>{t("Shared only with service providers needed to operate Stampee.")}</li>
+                  <li>{t("Protected with reasonable operational and technical safeguards.")}</li>
                 </ul>
               </div>
 
               <div className="bg-white px-6 py-2">
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#1d1d1f]">Need help?</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#1d1d1f]">{t("Need help?")}</p>
                 <p className="mt-4 text-sm leading-7 text-[#5f4a2c]">
-                  If you need privacy-related help, email{" "}
-                  <a className="font-medium underline underline-offset-2" href={`mailto:${SUPPORT_EMAIL}`}>
-                    {SUPPORT_EMAIL}
-                  </a>.
+                  {t("If you need privacy-related help, email {email}.", { email: SUPPORT_EMAIL })}
                 </p>
               </div>
             </aside>

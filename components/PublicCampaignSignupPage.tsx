@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useI18n } from "../lib/i18n";
 import { useNavigate, useParams } from 'react-router-dom';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
@@ -10,6 +11,7 @@ const SERVICE_UNAVAILABLE_MESSAGE = 'Service is temporarily unavailable. Please 
 
 export const PublicCampaignSignupPage: React.FC = () => {
   const navigate = useNavigate();
+  const { t, locale } = useI18n();
   const { slug, campaignId } = useParams<{ slug: string; campaignId: string }>();
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -49,11 +51,11 @@ export const PublicCampaignSignupPage: React.FC = () => {
 
     const trimmedName = name.trim();
     if (!trimmedName) {
-      setError('Name is required.');
+      setError(t("Name is required."));
       return;
     }
     if (!slug || !campaignId) {
-      setError('Invalid signup link.');
+      setError(t("Invalid signup link."));
       return;
     }
 
@@ -69,8 +71,8 @@ export const PublicCampaignSignupPage: React.FC = () => {
     if (result.outcome === 'issued' || result.outcome === 'redirect_existing') {
       setPreRedirectMessage(
         result.outcome === 'issued'
-          ? 'Generating your loyalty card. Please wait...'
-          : 'Redirecting to your loyalty card. Please wait...'
+          ? t("Generating your loyalty card. Please wait...")
+          : t("Redirecting to your loyalty card. Please wait...")
       );
       await new Promise((resolve) => setTimeout(resolve, 900));
       navigate(`/${slug}/${result.uniqueId}`, { replace: true });
@@ -80,7 +82,7 @@ export const PublicCampaignSignupPage: React.FC = () => {
     setSubmitting(false);
 
     if (result.outcome === 'campaign_disabled_no_existing') {
-      setError('New signups are paused for this campaign. If you already have an in-progress card, enter the same email or mobile number you used before.');
+      setError(t("New signups are paused for this campaign. If you already have an in-progress card, enter the same email or mobile number you used before."));
       return;
     }
 
@@ -98,7 +100,7 @@ export const PublicCampaignSignupPage: React.FC = () => {
   if (!isSupabaseConfigured) {
     return (
       <div className="h-screen flex items-center justify-center px-6 text-center text-muted-foreground">
-        {SERVICE_UNAVAILABLE_MESSAGE}
+        {t(SERVICE_UNAVAILABLE_MESSAGE)}
       </div>
     );
   }
@@ -106,7 +108,7 @@ export const PublicCampaignSignupPage: React.FC = () => {
   if (!context) {
     return (
       <div className="h-screen flex items-center justify-center px-6 text-center text-muted-foreground">
-        Campaign signup link is invalid.
+        {t("Campaign signup link is invalid.")}
       </div>
     );
   }
@@ -128,30 +130,29 @@ export const PublicCampaignSignupPage: React.FC = () => {
       )}
       <div className="mx-auto w-full max-w-xl">
         <section className="rounded-[2rem] border border-black/[0.08] bg-white p-6 shadow-[0_24px_64px_-38px_rgba(0,0,0,0.35)] sm:p-8">
-          <p className="text-[0.68rem] font-semibold uppercase tracking-[0.26em] text-[#6e6e73]">Loyalty Signup</p>
+          <p className="text-[0.68rem] font-semibold uppercase tracking-[0.26em] text-[#6e6e73]">{t("Loyalty Signup")}</p>
           <h1 className="mt-3 text-[clamp(1.9rem,5vw,2.7rem)] font-black leading-[0.96] tracking-[-0.03em] text-[#1d1d1f]">
             {context.owner.businessName}
           </h1>
           <p className="mt-3 text-[0.98rem] leading-7 text-[#4f5258]">
-            Join <span className="font-semibold text-[#1d1d1f]">{context.campaign.name}</span> to start collecting stamps.
+            {t("Join {name} to start collecting stamps.", { name: context.campaign.name })}
           </p>
 
           {disabled && (
             <div className="mt-5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-800">
-              New signups are currently paused for this campaign. If you already have an in-progress card, enter the same email or mobile to continue.
+              {t("New signups are currently paused for this campaign. If you already have an in-progress card, enter the same email or mobile to continue.")}
             </div>
           )}
 
           <form onSubmit={handleSubmit} className="mt-6 space-y-5">
             <div className="grid gap-2">
-              <Label htmlFor="name" className="text-sm font-medium text-[#1d1d1f]">
-                Name <span className="text-[#d73a49]">*</span>
+              <Label htmlFor="name" className="text-sm font-medium text-[#1d1d1f]">{t("Name")} <span className="text-[#d73a49]">*</span>
               </Label>
               <Input
                 id="name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="Your full name"
+                placeholder={t("Your full name")}
                 autoComplete="name"
                 required
                 className="h-12 rounded-xl border-black/10 text-[#1d1d1f] placeholder:text-[#8f9197]"
@@ -159,8 +160,7 @@ export const PublicCampaignSignupPage: React.FC = () => {
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="email" className="text-sm font-medium text-[#1d1d1f]">
-                Email <span className="text-[#6e6e73]">(Optional)</span>
+              <Label htmlFor="email" className="text-sm font-medium text-[#1d1d1f]">{t("Email")} <span className="text-[#6e6e73]">{t("(Optional)")}</span>
               </Label>
               <Input
                 id="email"
@@ -171,22 +171,21 @@ export const PublicCampaignSignupPage: React.FC = () => {
                 type="email"
                 className="h-12 rounded-xl border-black/10 text-[#1d1d1f] placeholder:text-[#8f9197]"
               />
-              <p className="text-xs leading-5 text-[#6e6e73]">Used for card recovery and reward updates.</p>
+              <p className="text-xs leading-5 text-[#6e6e73]">{t("Used for card recovery and reward updates.")}</p>
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="mobile" className="text-sm font-medium text-[#1d1d1f]">
-                Mobile Number <span className="text-[#6e6e73]">(Optional)</span>
+              <Label htmlFor="mobile" className="text-sm font-medium text-[#1d1d1f]">{t("Mobile Number")} <span className="text-[#6e6e73]">{t("(Optional)")}</span>
               </Label>
               <Input
                 id="mobile"
                 value={mobile}
                 onChange={(e) => setMobile(e.target.value)}
-                placeholder="09xxxxxxxxx"
+                placeholder={t("09xxxxxxxxx")}
                 autoComplete="tel"
                 className="h-12 rounded-xl border-black/10 text-[#1d1d1f] placeholder:text-[#8f9197]"
               />
-              <p className="text-xs leading-5 text-[#6e6e73]">Helps staff find your card quickly.</p>
+              <p className="text-xs leading-5 text-[#6e6e73]">{t("Helps staff find your card quickly.")}</p>
             </div>
 
             {error && (
@@ -200,7 +199,7 @@ export const PublicCampaignSignupPage: React.FC = () => {
               className="h-12 w-full rounded-xl bg-[#1d1d1f] text-sm font-semibold text-white hover:bg-black/85"
               disabled={submitting}
             >
-              {submitting ? 'Checking your card...' : 'Get My Loyalty Card'}
+              {submitting ? t("Checking your card...") : t("Get My Loyalty Card")}
             </Button>
           </form>
         </section>

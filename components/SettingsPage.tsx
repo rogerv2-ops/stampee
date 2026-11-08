@@ -8,11 +8,14 @@ import { useAuth } from "./AuthProvider";
 import { buildStaffPortalUrl } from "../lib/links";
 import { Link, useNavigate } from "react-router-dom";
 import { useSubscriptionContext } from "./SubscriptionContext";
+import { useI18n } from "../lib/i18n";
+import { APP_ORIGIN } from "../lib/siteConfig";
 
 const DELETE_CONFIRMATION = "DELETE";
 
 export const SettingsPage: React.FC = () => {
   const navigate = useNavigate();
+  const { t } = useI18n();
   const { staffAccounts, createStaff, updateStaffPin, setStaffAccess, deleteStaff, currentOwner, activeBusiness, currentUser, deleteAccount, updateProfileInfo, updatePassword } = useAuth();
   useSubscriptionContext();
 
@@ -67,9 +70,9 @@ export const SettingsPage: React.FC = () => {
     });
     setProfileBusy(false);
     if (!result.ok) {
-      setProfileError(result.error);
+      setProfileError(t(result.error));
     } else {
-      setProfileSuccess("Profile updated successfully.");
+      setProfileSuccess(t("Profile updated successfully."));
       setTimeout(() => setProfileSuccess(""), 3000);
     }
   };
@@ -79,16 +82,16 @@ export const SettingsPage: React.FC = () => {
     setPasswordError("");
     setPasswordSuccess("");
     if (passwordForm.next !== passwordForm.confirm) {
-      setPasswordError("New passwords do not match.");
+      setPasswordError(t("New passwords do not match."));
       return;
     }
     setPasswordBusy(true);
     const result = await updatePassword(passwordForm.next);
     setPasswordBusy(false);
     if (!result.ok) {
-      setPasswordError(result.error);
+      setPasswordError(t(result.error));
     } else {
-      setPasswordSuccess("Password changed successfully.");
+      setPasswordSuccess(t("Password changed successfully."));
       setPasswordForm({ next: "", confirm: "" });
       setTimeout(() => setPasswordSuccess(""), 3000);
     }
@@ -102,7 +105,7 @@ export const SettingsPage: React.FC = () => {
     const result = await createStaff(form);
     setStaffBusy(false);
     if (!result.ok) {
-      setError(result.error);
+      setError(t(result.error));
       return;
     }
     setForm({ name: "", email: "", pin: "" });
@@ -115,7 +118,7 @@ export const SettingsPage: React.FC = () => {
     const result = await updateStaffPin(resetTarget.id, resetPin);
     setResetBusy(false);
     if (!result.ok) {
-      setResetError(result.error);
+      setResetError(t(result.error));
       return;
     }
     setResetPin("");
@@ -128,14 +131,14 @@ export const SettingsPage: React.FC = () => {
     const result = await setStaffAccess(staffId, access);
     setStaffActionBusyId(null);
     if (!result.ok) {
-      setStaffActionError(result.error);
+      setStaffActionError(t(result.error));
     }
   };
 
   const handleDeleteFinal = async () => {
     setDeleteError("");
     if (deleteConfirmText.trim().toUpperCase() !== DELETE_CONFIRMATION) {
-      setDeleteError(`Type ${DELETE_CONFIRMATION} to confirm account deletion.`);
+      setDeleteError(t("Type {confirmation} to confirm account deletion.", { confirmation: DELETE_CONFIRMATION }));
       return;
     }
 
@@ -143,7 +146,7 @@ export const SettingsPage: React.FC = () => {
     const result = await deleteAccount();
     setDeleteAccountBusy(false);
     if (!result.ok) {
-      setDeleteError(result.error);
+      setDeleteError(t(result.error));
       return;
     }
 
@@ -159,7 +162,7 @@ export const SettingsPage: React.FC = () => {
     const result = await deleteStaff(deleteStaffTarget.id);
     setDeleteStaffBusy(false);
     if (!result.ok) {
-      setDeleteStaffError(result.error);
+      setDeleteStaffError(t(result.error));
       return;
     }
     setDeleteStaffTarget(null);
@@ -168,56 +171,56 @@ export const SettingsPage: React.FC = () => {
   return (
     <div className="p-4 md:p-8 space-y-6 md:space-y-8 animate-fade-in h-full overflow-y-auto flex flex-col bg-gray-50/50">
       <div className="space-y-1">
-        <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground">Settings</h1>
-        <p className="text-sm text-muted-foreground">Manage your profile, password, team, and account.</p>
+        <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground">{t("Settings")}</h1>
+        <p className="text-sm text-muted-foreground">{t("Manage your profile, password, team, and account.")}</p>
       </div>
       <section className="rounded-2xl md:rounded-3xl border bg-white p-4 md:p-6 shadow-sm flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-lg font-semibold">Business workspaces</h2>
-          <p className="text-sm text-muted-foreground">Create another independent business or switch between your existing workspaces.</p>
+          <h2 className="text-lg font-semibold">{t("Business workspaces")}</h2>
+          <p className="text-sm text-muted-foreground">{t("Create another independent business or switch between your existing workspaces.")}</p>
         </div>
-        <Link to="/businesses" className="inline-flex h-10 items-center justify-center rounded-full bg-primary px-5 text-sm font-medium text-primary-foreground hover:bg-primary/90">Manage businesses</Link>
+        <Link to="/businesses" className="inline-flex h-10 items-center justify-center rounded-full bg-primary px-5 text-sm font-medium text-primary-foreground hover:bg-primary/90">{t("Manage businesses")}</Link>
       </section>
 
       {/* Edit Profile */}
       <section className="rounded-2xl md:rounded-3xl border bg-white p-4 md:p-6 shadow-sm space-y-5">
         <div>
-          <h2 className="text-lg md:text-xl font-semibold">Edit Profile</h2>
-          <p className="text-sm text-muted-foreground">Update your business name and email address.</p>
+          <h2 className="text-lg md:text-xl font-semibold">{t("Edit Profile")}</h2>
+          <p className="text-sm text-muted-foreground">{t("Update your business name and email address.")}</p>
         </div>
         <form className="space-y-4" onSubmit={handleProfileSave}>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
-              <Label>Business / Display Name</Label>
+              <Label>{t("Business / Display Name")}</Label>
               <Input
                 value={profileForm.businessName}
                 onChange={(e) => setProfileForm({ ...profileForm, businessName: e.target.value })}
-                placeholder="Your Business"
+                placeholder={t("Your Business")}
                 required
               />
             </div>
             <div className="space-y-1.5">
-              <Label>Email Address</Label>
+              <Label>{t("Email Address")}</Label>
               <Input
                 value={profileForm.email}
                 onChange={(e) => setProfileForm({ ...profileForm, email: e.target.value })}
                 type="email"
-                placeholder="you@brand.com"
+                placeholder={t("you@brand.com")}
                 required
               />
             </div>
             {currentUser?.role === "owner" && (
               <div className="space-y-1.5">
-                <Label>Public URL Slug</Label>
+                <Label>{t("Public URL Slug")}</Label>
                 <div className="flex items-center gap-2">
-                  <span className="text-sm text-muted-foreground shrink-0">stampee.co/</span>
+                  <span className="text-sm text-muted-foreground shrink-0">{APP_ORIGIN.replace(/^https?:\/\//, "")}/</span>
                   <Input
                     value={profileForm.slug}
                     readOnly
                     className="bg-muted/40 text-muted-foreground cursor-not-allowed"
                   />
                 </div>
-                <p className="text-[11px] text-muted-foreground">Your public URL cannot be changed after signup.</p>
+                <p className="text-[11px] text-muted-foreground">{t("Your public URL cannot be changed after signup.")}</p>
               </div>
             )}
           </div>
@@ -233,7 +236,7 @@ export const SettingsPage: React.FC = () => {
           )}
           <div>
             <Button type="submit" className="rounded-full px-6" disabled={profileBusy}>
-              {profileBusy ? "Saving..." : "Save Profile"}
+              {profileBusy ? t(t("Saving...")) : t("Save Profile")}
             </Button>
           </div>
         </form>
@@ -242,13 +245,13 @@ export const SettingsPage: React.FC = () => {
       {/* Change Password */}
       <section className="rounded-2xl md:rounded-3xl border bg-white p-4 md:p-6 shadow-sm space-y-5">
         <div>
-          <h2 className="text-lg md:text-xl font-semibold">Change Password</h2>
-          <p className="text-sm text-muted-foreground">Update your account password. Must be at least 6 characters.</p>
+          <h2 className="text-lg md:text-xl font-semibold">{t("Change Password")}</h2>
+          <p className="text-sm text-muted-foreground">{t("Update your account password. Must be at least 6 characters.")}</p>
         </div>
         <form className="space-y-4" onSubmit={handlePasswordSave}>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
-              <Label>New Password</Label>
+              <Label>{t("New Password")}</Label>
               <Input
                 type="password"
                 value={passwordForm.next}
@@ -258,7 +261,7 @@ export const SettingsPage: React.FC = () => {
               />
             </div>
             <div className="space-y-1.5">
-              <Label>Confirm New Password</Label>
+              <Label>{t("Confirm New Password")}</Label>
               <Input
                 type="password"
                 value={passwordForm.confirm}
@@ -280,7 +283,7 @@ export const SettingsPage: React.FC = () => {
           )}
           <div>
             <Button type="submit" className="rounded-full px-6" disabled={passwordBusy}>
-              {passwordBusy ? "Changing..." : "Change Password"}
+              {passwordBusy ? t("Changing...") : t("Change Password")}
             </Button>
           </div>
         </form>
@@ -289,18 +292,18 @@ export const SettingsPage: React.FC = () => {
       <section className="rounded-2xl md:rounded-3xl border bg-white p-4 md:p-6 shadow-sm space-y-6">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
-            <h2 className="text-lg md:text-xl font-semibold">Staff Accounts</h2>
+            <h2 className="text-lg md:text-xl font-semibold">{t("Staff Accounts")}</h2>
             <p className="text-sm text-muted-foreground">
-              Create staff logins for issuing cards and managing stamps.
+              {t("Create staff logins for issuing cards and managing stamps.")}
             </p>
           </div>
           {activeBusiness?.slug && activeBusiness?.id && (
             <div className="text-xs text-muted-foreground space-y-2 md:text-right">
               <div>
-                Org ID: <span className="font-mono break-all">{activeBusiness.id}</span>
+                {t("Org ID:")} <span className="font-mono break-all">{activeBusiness.id}</span>
               </div>
               <div className="text-[11px] text-muted-foreground/80">
-                Share this Org ID or portal link with staff.
+                {t("Share this Org ID or portal link with staff.")}
               </div>
               <div className="flex items-center gap-2">
                 <Input
@@ -314,8 +317,7 @@ export const SettingsPage: React.FC = () => {
                   size="sm"
                   className="shrink-0"
                   onClick={() => navigator.clipboard.writeText(buildStaffPortalUrl(activeBusiness.slug!, activeBusiness.id))}
-                >
-                  Copy
+                >{t("Copy")}
                 </Button>
               </div>
             </div>
@@ -325,16 +327,16 @@ export const SettingsPage: React.FC = () => {
         <form className="space-y-3" onSubmit={handleCreate}>
           <div className="grid gap-3 sm:grid-cols-3">
             <div className="space-y-1.5">
-              <Label>Name</Label>
+              <Label>{t("Name")}</Label>
               <Input
                 value={form.name}
                 onChange={(event) => setForm({ ...form, name: event.target.value })}
-                placeholder="Jamie Staff"
+                placeholder={t("Jamie Staff")}
                 required
               />
             </div>
             <div className="space-y-1.5">
-              <Label>Email</Label>
+              <Label>{t("Email")}</Label>
               <Input
                 value={form.email}
                 onChange={(event) => setForm({ ...form, email: event.target.value })}
@@ -344,18 +346,18 @@ export const SettingsPage: React.FC = () => {
               />
             </div>
             <div className="space-y-1.5">
-              <Label>PIN</Label>
+              <Label>{t("PIN")}</Label>
               <Input
                 value={form.pin}
                 onChange={(event) => setForm({ ...form, pin: event.target.value })}
-                placeholder="4-6 digits"
+                placeholder={t("4-6 digits")}
                 maxLength={6}
                 required
               />
             </div>
           </div>
           <Button type="submit" className="rounded-full h-10 px-6 w-full sm:w-auto" disabled={staffBusy}>
-            {staffBusy ? "Adding..." : "Add Staff"}
+            {staffBusy ? t("Adding...") : t("Add Staff")}
           </Button>
         </form>
 
@@ -374,14 +376,14 @@ export const SettingsPage: React.FC = () => {
         {/* Staff table — desktop */}
         <div className="hidden md:block rounded-2xl border border-slate-100 overflow-hidden">
           <div className="grid grid-cols-[1.2fr_1.4fr_0.8fr_auto] gap-4 px-4 py-3 text-xs uppercase tracking-wider text-muted-foreground bg-slate-50">
-            <span>Name</span>
-            <span>Email</span>
-            <span>Status</span>
-            <span className="text-right">Actions</span>
+            <span>{t("Name")}</span>
+            <span>{t("Email")}</span>
+            <span>{t("Status")}</span>
+            <span className="text-right">{t("Actions")}</span>
           </div>
           {staffAccounts.length === 0 ? (
             <div className="px-4 py-6 text-sm text-muted-foreground">
-              No staff yet. Add your first teammate above.
+              {t("No staff yet. Add your first teammate above.")}
             </div>
           ) : (
             staffAccounts.map((staff) => (
@@ -409,8 +411,7 @@ export const SettingsPage: React.FC = () => {
                       setResetPin("");
                       setResetError("");
                     }}
-                  >
-                    Reset PIN
+                  >{t("Reset PIN")}
                   </Button>
                   <Button
                     variant={staff.access === "active" ? "destructive" : "default"}
@@ -420,7 +421,7 @@ export const SettingsPage: React.FC = () => {
                       handleSetStaffAccess(staff.id, staff.access === "active" ? "disabled" : "active")
                     }
                   >
-                    {staffActionBusyId === staff.id ? "Saving..." : (staff.access === "active" ? "Disable" : "Enable")}
+                    {staffActionBusyId === staff.id ? t("Saving...") : (staff.access === "active" ? t("Disable") : t("Enable"))}
                   </Button>
                   <Button
                     variant="destructive"
@@ -430,8 +431,7 @@ export const SettingsPage: React.FC = () => {
                       setDeleteStaffTarget({ id: staff.id, name: staff.businessName });
                       setDeleteStaffError("");
                     }}
-                  >
-                    Delete
+                  >{t("Delete")}
                   </Button>
                 </div>
               </div>
@@ -443,7 +443,7 @@ export const SettingsPage: React.FC = () => {
         <div className="md:hidden space-y-3">
           {staffAccounts.length === 0 ? (
             <div className="rounded-2xl border border-slate-100 px-4 py-6 text-sm text-muted-foreground">
-              No staff yet. Add your first teammate above.
+              {t("No staff yet. Add your first teammate above.")}
             </div>
           ) : (
             staffAccounts.map((staff) => (
@@ -474,8 +474,7 @@ export const SettingsPage: React.FC = () => {
                       setResetPin("");
                       setResetError("");
                     }}
-                  >
-                    Reset PIN
+                  >{t("Reset PIN")}
                   </Button>
                   <Button
                     variant={staff.access === "active" ? "destructive" : "default"}
@@ -486,7 +485,7 @@ export const SettingsPage: React.FC = () => {
                       handleSetStaffAccess(staff.id, staff.access === "active" ? "disabled" : "active")
                     }
                   >
-                    {staffActionBusyId === staff.id ? "Saving..." : (staff.access === "active" ? "Disable" : "Enable")}
+                    {staffActionBusyId === staff.id ? t("Saving...") : (staff.access === "active" ? t("Disable") : t("Enable"))}
                   </Button>
                   <Button
                     variant="destructive"
@@ -497,8 +496,7 @@ export const SettingsPage: React.FC = () => {
                       setDeleteStaffTarget({ id: staff.id, name: staff.businessName });
                       setDeleteStaffError("");
                     }}
-                  >
-                    Delete
+                  >{t("Delete")}
                   </Button>
                 </div>
               </div>
@@ -509,13 +507,13 @@ export const SettingsPage: React.FC = () => {
 
       <section className="rounded-2xl md:rounded-3xl border border-rose-200 bg-rose-50 p-4 md:p-6 shadow-sm space-y-4">
         <div className="space-y-1">
-          <h2 className="text-lg md:text-xl font-semibold text-rose-900">Danger Zone</h2>
+          <h2 className="text-lg md:text-xl font-semibold text-rose-900">{t("Danger Zone")}</h2>
           <p className="text-sm text-rose-800/90">
-            Delete your owner account, all staff logins, and all campaign/customer data for this business.
+            {t("Delete your owner account, all staff logins, and all campaign/customer data for this business.")}
           </p>
         </div>
         <div className="rounded-2xl border border-rose-200 bg-white/70 px-4 py-3 text-xs text-rose-800">
-          This action is permanent and cannot be undone.
+          {t("This action is permanent and cannot be undone.")}
         </div>
         <div>
           <Button
@@ -526,8 +524,7 @@ export const SettingsPage: React.FC = () => {
               setDeleteConfirmText("");
               setIsDeleteStepOneOpen(true);
             }}
-          >
-            Delete Account
+          >{t("Delete Account")}
           </Button>
         </div>
       </section>
@@ -535,14 +532,14 @@ export const SettingsPage: React.FC = () => {
       <Dialog open={!!resetTarget} onOpenChange={(open) => !open && !resetBusy && setResetTarget(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Reset PIN for {resetTarget?.name}</DialogTitle>
+            <DialogTitle>{t("Reset PIN for {name}", { name: resetTarget?.name ?? "" })}</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
-            <Label>New PIN</Label>
+            <Label>{t("New PIN")}</Label>
             <Input
               value={resetPin}
               onChange={(event) => setResetPin(event.target.value)}
-              placeholder="4-6 digits"
+              placeholder={t("4-6 digits")}
               maxLength={6}
             />
             {resetError && (
@@ -551,10 +548,10 @@ export const SettingsPage: React.FC = () => {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setResetTarget(null)} disabled={resetBusy}>
-              Cancel
+              {t("Cancel")}
             </Button>
             <Button onClick={handleReset} disabled={resetBusy}>
-              {resetBusy ? "Updating..." : "Update PIN"}
+              {resetBusy ? t("Updating...") : t("Update PIN")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -563,11 +560,11 @@ export const SettingsPage: React.FC = () => {
       <Dialog open={!!deleteStaffTarget} onOpenChange={(open) => !open && setDeleteStaffTarget(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete staff account?</DialogTitle>
+            <DialogTitle>{t("Delete staff account?")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
             <p className="text-sm text-muted-foreground">
-              This will permanently remove <span className="font-semibold text-foreground">{deleteStaffTarget?.name}</span> and revoke their login access.
+              {t("This will permanently remove {name} and revoke their login access.", { name: deleteStaffTarget?.name ?? "" })}
             </p>
             {deleteStaffError && (
               <div className="text-sm text-rose-600">{deleteStaffError}</div>
@@ -575,10 +572,10 @@ export const SettingsPage: React.FC = () => {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDeleteStaffTarget(null)}>
-              Cancel
+              {t("Cancel")}
             </Button>
             <Button variant="destructive" onClick={handleDeleteStaff} disabled={deleteStaffBusy}>
-              {deleteStaffBusy ? "Deleting..." : "Delete Staff"}
+              {deleteStaffBusy ? t("Deleting...") : t("Delete Staff")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -587,18 +584,18 @@ export const SettingsPage: React.FC = () => {
       <Dialog open={isDeleteStepOneOpen} onOpenChange={(open) => !deleteAccountBusy && setIsDeleteStepOneOpen(open)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete Account: Step 1 of 2</DialogTitle>
+            <DialogTitle>{t("Delete Account: Step 1 of 2")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-3 text-sm text-muted-foreground">
             <p>
-              You are about to delete the account for <span className="font-semibold text-foreground">{currentOwner?.businessName}</span>.
+              {t("You are about to delete the account for {name}.", { name: currentOwner?.businessName ?? "" })}
             </p>
-            <p>This will remove owner access, all businesses, staff accounts, campaigns, and customer history.</p>
-            <p className="text-rose-600 font-medium">This action cannot be undone.</p>
+            <p>{t("This will remove owner access, all businesses, staff accounts, campaigns, and customer history.")}</p>
+            <p className="text-rose-600 font-medium">{t("This action cannot be undone.")}</p>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsDeleteStepOneOpen(false)}>
-              Cancel
+              {t("Cancel")}
             </Button>
             <Button
               variant="destructive"
@@ -609,7 +606,7 @@ export const SettingsPage: React.FC = () => {
                 setIsDeleteStepTwoOpen(true);
               }}
             >
-              Continue
+              {t("Continue")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -628,12 +625,11 @@ export const SettingsPage: React.FC = () => {
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete Account: Step 2 of 2</DialogTitle>
+            <DialogTitle>{t("Delete Account: Step 2 of 2")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
             <p className="text-sm text-muted-foreground">
-              Type <span className="font-mono font-semibold text-foreground">{DELETE_CONFIRMATION}</span> to permanently
-              delete this account.
+              {t("Type {confirmation} to permanently delete this account.", { confirmation: DELETE_CONFIRMATION })}
             </p>
             <Input
               value={deleteConfirmText}
@@ -644,14 +640,14 @@ export const SettingsPage: React.FC = () => {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsDeleteStepTwoOpen(false)} disabled={deleteAccountBusy}>
-              Cancel
+              {t("Cancel")}
             </Button>
             <Button
               variant="destructive"
               onClick={handleDeleteFinal}
               disabled={deleteAccountBusy || deleteConfirmText.trim().toUpperCase() !== DELETE_CONFIRMATION}
             >
-              {deleteAccountBusy ? "Deleting..." : "Permanently Delete"}
+              {deleteAccountBusy ? t("Deleting...") : t("Permanently Delete")}
             </Button>
           </DialogFooter>
         </DialogContent>

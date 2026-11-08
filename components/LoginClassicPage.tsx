@@ -7,12 +7,14 @@ import { Input } from "./ui/input";
 import { useAuth } from "./AuthProvider";
 import { trackEvent } from "../lib/analytics";
 import { DEMO_WORKSPACE_ENABLED } from "../lib/siteConfig";
+import { useI18n } from "../lib/i18n";
 
 const inputCls =
   "h-12 rounded-xl border-black/[0.1] bg-[#f5f5f7] text-[#1d1d1f] placeholder:text-[#6e6e73]/50 focus-visible:border-[#1d1d1f] focus-visible:ring-0";
 const labelCls = "block text-[11px] font-semibold uppercase tracking-[0.16em] text-[#6e6e73]";
 
 export const LoginClassicPage: React.FC = () => {
+  const { t } = useI18n();
   const { currentUser, loading, login, loginDemo } = useAuth();
   const location = useLocation();
   const fromPath = (location.state as { from?: { pathname?: string } })?.from?.pathname;
@@ -78,19 +80,19 @@ export const LoginClassicPage: React.FC = () => {
 
   return (
     <AuthLayout
-      title="Welcome back."
-      subtitle="Manage campaigns, issue stamps, and track loyalty performance in real time."
-      badge="Sign in"
+      title={t("Welcome back.")}
+      subtitle={t("Manage campaigns, issue stamps, and track loyalty performance in real time.")}
+      badge={t("Sign in")}
       theme="login"
     >
       <form className="space-y-5" onSubmit={handleSubmit}>
         <div className="mb-2">
-          <h2 className="text-xl font-semibold text-[#1d1d1f]">Sign in to your account</h2>
-          <p className="mt-1 text-sm text-[#6e6e73]">Enter your credentials below to continue.</p>
+          <h2 className="text-xl font-semibold text-[#1d1d1f]">{t("Sign in to your account")}</h2>
+          <p className="mt-1 text-sm text-[#6e6e73]">{t("Enter your credentials below to continue.")}</p>
         </div>
 
         <div className="space-y-1.5">
-          <label className={labelCls}>Email</label>
+          <label className={labelCls}>{t("Email")}</label>
           <Input
             value={email}
             onChange={(e) => setEmail(e.target.value)}
@@ -104,18 +106,18 @@ export const LoginClassicPage: React.FC = () => {
 
         <div className="space-y-1.5">
           <div className="flex items-center justify-between">
-            <label className={labelCls}>Password</label>
+            <label className={labelCls}>{t("Password")}</label>
             <Link
               to="/forgot-password"
               className="text-[11px] text-[#6e6e73] underline-offset-2 hover:underline hover:text-[#1d1d1f]"
             >
-              Forgot password?
+              {t("Forgot password?")}
             </Link>
           </div>
           <Input
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            placeholder="Your password"
+            placeholder={t("Your password")}
             className={inputCls}
             type="password"
             autoComplete="current-password"
@@ -125,7 +127,7 @@ export const LoginClassicPage: React.FC = () => {
 
         {error && (
           <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
-            {error}
+            {t(error)}
           </div>
         )}
 
@@ -134,18 +136,17 @@ export const LoginClassicPage: React.FC = () => {
           disabled={isDisabled}
           className="h-12 w-full rounded-full bg-[#1d1d1f] text-base font-medium text-white shadow-sm hover:bg-black/80"
         >
-          {isSubmitting ? "Signing in..." : <>Continue <ArrowRight className="ml-2 h-4 w-4" /></>}
+          {isSubmitting ? t("Signing in...") : <>{t("Continue")} <ArrowRight className="ml-2 h-4 w-4" /></>}
         </Button>
         {loading && !busy && (
-          <p className="text-center text-xs text-[#6e6e73]">Checking existing session...</p>
+          <p className="text-center text-xs text-[#6e6e73]">{t("Checking existing session...")}</p>
         )}
 
         {showDemoWorkspace && (
           <>
             <div className="relative py-1">
               <div className="border-t border-black/[0.08]" />
-              <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-white px-3 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#6e6e73]">
-                or
+              <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-white px-3 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#6e6e73]">{t("or")}
               </span>
             </div>
 
@@ -156,15 +157,15 @@ export const LoginClassicPage: React.FC = () => {
               className="h-12 w-full rounded-full border-black/[0.1] bg-white text-base font-medium text-[#1d1d1f] hover:bg-[#f5f5f7]"
               onClick={handleDemo}
             >
-              Try Demo Workspace
+              {t("Try Demo Workspace")}
             </Button>
           </>
         )}
 
         <p className="text-center text-sm text-[#6e6e73]">
-          New here?{" "}
+          {t("New here?")}{" "}
           <Link to="/signup" className="font-semibold text-[#1d1d1f] underline-offset-2 hover:underline">
-            Create your workspace
+            {t("Create your workspace")}
           </Link>
         </p>
       </form>

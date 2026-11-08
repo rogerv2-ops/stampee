@@ -1,3 +1,4 @@
+import { useI18n } from "../lib/i18n";
 import React, { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { ChartNoAxesCombined, ChevronDown, Leaf, QrCode } from "lucide-react";
@@ -47,13 +48,15 @@ const rise = (on: boolean, delay = 0) => ({
 });
 
 // ── Mockup: iPhone with loyalty card ─────────────────────────────────────────
-const PhoneMockup: React.FC = () => (
+const PhoneMockup: React.FC = () => {
+  const { t } = useI18n();
+  return (
   <div className="relative mx-auto w-full max-w-[320px] select-none drop-shadow-[0_40px_80px_rgba(0,0,0,0.22)]">
     <div className="relative rounded-[3rem] border-[8px] border-[#1d1d1f] bg-[#1d1d1f]">
       <div className="absolute left-1/2 top-3 z-10 h-[22px] w-[100px] -translate-x-1/2 rounded-full bg-[#1d1d1f]" />
       <div className="overflow-hidden rounded-[2.4rem] bg-[#f5f5f7]">
         <div className="flex items-center justify-between px-6 pt-4 pb-1">
-          <span className="text-[11px] font-semibold text-[#1d1d1f]">9:41</span>
+          <span className="text-[11px] font-semibold text-[#1d1d1f]">{"9:41"}</span>
           <div className="flex items-center gap-1.5">
             <svg width="15" height="11" viewBox="0 0 15 11" fill="none">
               <rect x="0" y="7" width="3" height="4" rx="0.6" fill="#1d1d1f" fillOpacity="0.5"/>
@@ -71,8 +74,8 @@ const PhoneMockup: React.FC = () => (
           <div className="bg-gradient-to-br from-amber-400 via-orange-400 to-rose-500 p-5">
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-[8px] font-bold uppercase tracking-[0.18em] text-white/60">LOYALTY CARD</p>
-                <p className="mt-0.5 text-[15px] font-bold leading-tight text-white">The Daily Brew</p>
+                <p className="text-[8px] font-bold uppercase tracking-[0.18em] text-white/60">{t("LOYALTY CARD")}</p>
+                <p className="mt-0.5 text-[15px] font-bold leading-tight text-white">{"The Daily Brew"}</p>
               </div>
               <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/25">
                 <div className="h-5 w-5 rounded-full bg-white/70" />
@@ -86,15 +89,15 @@ const PhoneMockup: React.FC = () => (
               ))}
             </div>
             <div className="mt-4 flex items-center justify-between">
-              <p className="text-[9px] font-semibold text-white/80">7 / 10 stamps</p>
-              <p className="text-[9px] font-semibold text-white/80">3 to go ✦</p>
+              <p className="text-[9px] font-semibold text-white/80">{t("7 / 10 stamps")}</p>
+              <p className="text-[9px] font-semibold text-white/80">{t("3 to go ✦")}</p>
             </div>
           </div>
         </div>
         <div className="mx-3 mt-2 flex items-center justify-between rounded-xl bg-white px-4 py-3 shadow-sm">
           <div>
-            <p className="text-[10px] font-semibold text-[#1d1d1f]">Scan to stamp</p>
-            <p className="text-[8px] text-[#6e6e73]">Show this to staff</p>
+            <p className="text-[10px] font-semibold text-[#1d1d1f]">{t("Scan to stamp")}</p>
+            <p className="text-[8px] text-[#6e6e73]">{t("Show this to staff")}</p>
           </div>
           <div className="h-8 w-8 rounded-lg bg-[#f5f5f7] flex items-center justify-center">
             <div className="grid grid-cols-3 gap-[2px]">
@@ -105,15 +108,15 @@ const PhoneMockup: React.FC = () => (
           </div>
         </div>
         <div className="mx-3 mt-2 mb-5 rounded-xl border border-black/[0.06] bg-white px-4 py-3">
-          <p className="text-[8px] font-bold uppercase tracking-widest text-[#6e6e73]">Recent Stamps</p>
+          <p className="text-[8px] font-bold uppercase tracking-widest text-[#6e6e73]">{t("Recent Stamps")}</p>
           <div className="mt-2 space-y-1.5">
             {[{ l: "+1 stamp", t: "Today, 10:24 AM" }, { l: "+1 stamp", t: "Yesterday, 3:15 PM" }, { l: "+1 stamp", t: "Feb 22, 9:00 AM" }].map(item => (
               <div key={item.t} className="flex items-center justify-between">
                 <div className="flex items-center gap-1.5">
                   <div className="h-1.5 w-1.5 rounded-full bg-amber-400" />
-                  <p className="text-[8px] font-medium text-[#1d1d1f]">{item.l}</p>
+                  <p className="text-[8px] font-medium text-[#1d1d1f]">{t(item.l)}</p>
                 </div>
-                <p className="text-[7px] text-[#6e6e73]">{item.t}</p>
+                <p className="text-[7px] text-[#6e6e73]">{t(item.t)}</p>
               </div>
             ))}
           </div>
@@ -121,17 +124,20 @@ const PhoneMockup: React.FC = () => (
       </div>
     </div>
   </div>
-);
+  );
+};
 
 // ── Mockup: Analytics dashboard ───────────────────────────────────────────────
-const AnalyticsMockup: React.FC = () => (
+const AnalyticsMockup: React.FC = () => {
+  const { t } = useI18n();
+  return (
   <div className="select-none overflow-hidden rounded-2xl border border-black/[0.08] shadow-[0_24px_72px_-12px_rgba(0,0,0,0.14)]">
     <div className="flex items-center gap-1.5 border-b border-black/[0.06] bg-[#e4e4e4] px-4 py-2.5">
       <div className="h-3 w-3 rounded-full bg-[#ff5f57]" />
       <div className="h-3 w-3 rounded-full bg-[#febc2e]" />
       <div className="h-3 w-3 rounded-full bg-[#28c840]" />
       <div className="ml-3 flex-1 rounded-md bg-white/80 px-3 py-1">
-        <p className="text-[9px] text-[#6e6e73]">app.stampee.co/analytics</p>
+        <p className="text-[9px] text-[#6e6e73]">{"app.stampee.co/analytics"}</p>
       </div>
     </div>
     <div className="flex bg-[#f8f8f8]">
@@ -141,29 +147,29 @@ const AnalyticsMockup: React.FC = () => (
         ))}
       </div>
       <div className="flex-1 p-4">
-        <p className="text-sm font-semibold text-[#1d1d1f]">Analytics</p>
-        <p className="text-[9px] text-[#6e6e73]">Feb 12 – Feb 25 · 14 days</p>
+        <p className="text-sm font-semibold text-[#1d1d1f]">{t("Analytics")}</p>
+        <p className="text-[9px] text-[#6e6e73]">{t("Feb 12 – Feb 25 · 14 days")}</p>
         <div className="mt-3 grid grid-cols-3 gap-2">
           {[{ l: "Customers", v: "142" }, { l: "Active Cards", v: "89" }, { l: "Redemption", v: "68%" }].map(s => (
             <div key={s.l} className="rounded-xl border border-black/[0.06] bg-white px-3 py-2.5 shadow-sm">
-              <p className="text-[8px] text-[#6e6e73]">{s.l}</p>
+              <p className="text-[8px] text-[#6e6e73]">{t(s.l)}</p>
               <p className="mt-0.5 text-base font-semibold text-[#1d1d1f]">{s.v}</p>
             </div>
           ))}
         </div>
         <div className="mt-3 overflow-hidden rounded-xl border border-black/[0.06] bg-white p-3 shadow-sm">
-          <p className="text-[9px] font-semibold text-[#1d1d1f]">Activity Over Time</p>
+          <p className="text-[9px] font-semibold text-[#1d1d1f]">{t("Activity Over Time")}</p>
           <div className="mt-2 flex h-20 items-end gap-[3px]">
             {[28,45,22,60,38,75,52,65,42,80,58,90,70,85].map((h, i) => (
               <div key={i} className="flex-1 rounded-t-[2px]" style={{ height: `${h}%`, background: i === 13 ? "#1d1d1f" : `rgba(29,29,31,${0.07 + (h/100)*0.18})` }} />
             ))}
           </div>
           <div className="mt-1.5 flex justify-between text-[8px] text-[#6e6e73]">
-            <span>Feb 12</span><span>Feb 25</span>
+            <span>{t("Feb 12")}</span><span>{t("Feb 25")}</span>
           </div>
         </div>
         <div className="mt-2 overflow-hidden rounded-xl border border-black/[0.06] bg-white p-3 shadow-sm">
-          <p className="text-[9px] font-semibold text-[#1d1d1f]">Campaign Performance</p>
+          <p className="text-[9px] font-semibold text-[#1d1d1f]">{t("Campaign Performance")}</p>
           <div className="mt-2 space-y-2.5">
             {[{ n: "Summer Treats", p: 68 }, { n: "Morning Rush", p: 42 }].map(c => (
               <div key={c.n}>
@@ -181,10 +187,12 @@ const AnalyticsMockup: React.FC = () => (
       </div>
     </div>
   </div>
-);
+  );
+};
 
 // ── Mockup: Customers directory ───────────────────────────────────────────────
 const CustomersMockup: React.FC = () => {
+  const { t } = useI18n();
   const rows = [
     { i: "ES", n: "Emma S.", e: "emma@example.com", c: 3, col: "bg-blue-100 text-blue-600" },
     { i: "LW", n: "Liam W.", e: "liam@example.com", c: 1, col: "bg-emerald-100 text-emerald-600" },
@@ -199,7 +207,7 @@ const CustomersMockup: React.FC = () => {
         <div className="h-3 w-3 rounded-full bg-[#febc2e]" />
         <div className="h-3 w-3 rounded-full bg-[#28c840]" />
         <div className="ml-3 flex-1 rounded-md bg-white/80 px-3 py-1">
-          <p className="text-[9px] text-[#6e6e73]">app.stampee.co/customers</p>
+          <p className="text-[9px] text-[#6e6e73]">{"app.stampee.co/customers"}</p>
         </div>
       </div>
       <div className="flex bg-[#f8f8f8]">
@@ -211,20 +219,20 @@ const CustomersMockup: React.FC = () => {
         <div className="flex-1 p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-semibold text-[#1d1d1f]">Customers</p>
-              <p className="text-[9px] text-[#6e6e73]">142 contacts</p>
+              <p className="text-sm font-semibold text-[#1d1d1f]">{t("Customers")}</p>
+              <p className="text-[9px] text-[#6e6e73]">{t("142 contacts")}</p>
             </div>
             <div className="rounded-full bg-[#1d1d1f] px-3 py-1">
-              <p className="text-[9px] font-semibold text-white">+ Add</p>
+              <p className="text-[9px] font-semibold text-white">{t("+ Add")}</p>
             </div>
           </div>
           <div className="mt-2.5 flex items-center gap-2 rounded-lg border border-black/[0.06] bg-white px-2.5 py-2 shadow-sm">
             <div className="h-3 w-3 rounded-full border-[1.5px] border-[#6e6e73]/40" />
-            <p className="text-[9px] text-[#6e6e73]/60">Search customers...</p>
+            <p className="text-[9px] text-[#6e6e73]/60">{t("Search customers...")}</p>
           </div>
           <div className="mt-2.5 overflow-hidden rounded-xl border border-black/[0.06] bg-white shadow-sm">
             <div className="grid grid-cols-[1fr_1.8fr_0.4fr] border-b border-black/[0.05] bg-[#f5f5f7] px-3 py-2 text-[8px] font-semibold uppercase tracking-widest text-[#6e6e73]">
-              <span>Name</span><span>Contact</span><span className="text-right">Cards</span>
+              <span>{t("Name")}</span><span>{t("Contact")}</span><span className="text-right">{t("Cards")}</span>
             </div>
             {rows.map((row, i) => (
               <div key={row.n} className={`grid grid-cols-[1fr_1.8fr_0.4fr] items-center px-3 py-2 ${i < rows.length - 1 ? "border-b border-black/[0.04]" : ""}`}>
@@ -252,6 +260,7 @@ const SectionLabel: React.FC<{ children: React.ReactNode; light?: boolean }> = (
 
 // ── Landing Page ──────────────────────────────────────────────────────────────
 export const LandingPage: React.FC = () => {
+  const { t, locale } = useI18n();
   const { currentUser, isStaff } = useAuth();
   const scrollY = useScrollY();
   const dashboardPath = isStaff ? "/issued-cards" : "/dashboard";
@@ -339,26 +348,26 @@ export const LandingPage: React.FC = () => {
       <header className="fixed top-0 z-50 w-full border-b border-black/[0.06] bg-white/75 backdrop-blur-2xl">
         <div className="mx-auto flex max-w-[88rem] items-center justify-between px-4 py-4 sm:px-6">
           <Link to="/" className="inline-flex items-center">
-            <img src="/stampee.svg" alt="Stampee" className="h-8 w-auto" />
+            <img src="/stampee.svg" alt={"Stampee"} className="h-8 w-auto" />
           </Link>
           <nav className="flex items-center gap-1.5 sm:gap-2">
             <Button asChild variant="ghost" className="hidden rounded-full text-sm font-medium text-[#1d1d1f] hover:bg-black/[0.06] sm:inline-flex">
-              <Link to="/showcase">Demos</Link>
+              <Link to="/showcase">{t("Demos")}</Link>
             </Button>
             <Button asChild variant="ghost" className="hidden rounded-full text-sm font-medium text-[#1d1d1f] hover:bg-black/[0.06] sm:inline-flex">
-              <Link to="/articles">Articles</Link>
+              <Link to="/articles">{t("Articles")}</Link>
             </Button>
             {currentUser ? (
               <Button asChild className="rounded-full bg-[#1d1d1f] px-4 text-sm font-medium text-white hover:bg-black/80 sm:px-5">
-                <Link to={dashboardPath}>Go to Dashboard</Link>
+                <Link to={dashboardPath}>{t("Go to Dashboard")}</Link>
               </Button>
             ) : (
               <>
                 <Button asChild variant="ghost" className="hidden rounded-full text-sm font-medium text-[#1d1d1f] hover:bg-black/[0.06] sm:inline-flex">
-                  <Link to="/login">Log in</Link>
+                  <Link to="/login">{t("Log in")}</Link>
                 </Button>
                 <Button asChild className="rounded-full bg-[#1d1d1f] px-4 text-sm font-medium text-white hover:bg-black/80 sm:px-5">
-                  <Link to="/signup" onClick={() => trackEvent("Landing CTA Clicked", { placement: "header" })}>Get started</Link>
+                  <Link to="/signup" onClick={() => trackEvent("Landing CTA Clicked", { placement: "header" })}>{t("Get started")}</Link>
                 </Button>
               </>
             )}
@@ -386,29 +395,29 @@ export const LandingPage: React.FC = () => {
           <div className="max-w-[42rem]">
             <div style={rise(hero.visible, 0)}>
               <span className="section-chip mb-7 inline-flex items-center rounded-full border border-[#17351a]/10 bg-white/35 px-5 py-2 text-[0.72rem] font-semibold uppercase tracking-[0.24em] text-[#284b1f] backdrop-blur-sm">
-                Digital Loyalty Platform
+                {t("Digital Loyalty Platform")}
               </span>
             </div>
             <h1
               style={rise(hero.visible, 70)}
               className="max-w-[11ch] text-[clamp(3rem,6.2vw,5.8rem)] font-black leading-[0.92] tracking-[-0.05em] text-[#17351a]"
             >
-              Loyalty beautifully built for repeat visits.
+              {t("Loyalty beautifully built for repeat visits.")}
             </h1>
             <div style={rise(hero.visible, 170)} className="mt-8 max-w-[38rem] space-y-4">
               <p className="text-[clamp(1.08rem,1.65vw,1.48rem)] leading-[1.45] text-[#23461d]/82">
-                Stampee is the modern, no-app loyalty system that turns one-time visitors into loyal customers — simple, smart, and instantly rewarding.
+                {t("Stampee is the modern, no-app loyalty system that turns one-time visitors into loyal customers — simple, smart, and instantly rewarding.")}
               </p>
               <p className="text-sm leading-7 text-[#23461d]/78 sm:text-base">
-                Launch a digital loyalty card with Stampee and run a loyalty program for cafes, loyalty program for spa, loyalty program for laundry, loyalty program for carwash, and loyalty program for salons.
+                {t("Launch a digital loyalty card with Stampee and run a loyalty program for cafes, loyalty program for spa, loyalty program for laundry, loyalty program for carwash, and loyalty program for salons.")}
               </p>
             </div>
             <div style={rise(hero.visible, 260)} className="mt-10 flex flex-col gap-4 sm:flex-row sm:flex-wrap">
               <Button asChild className="glow-button h-16 rounded-[1.55rem] bg-[#17351a] px-10 text-lg font-semibold text-white shadow-[0_26px_50px_-28px_rgba(23,53,26,0.85)] hover:bg-[#102712] sm:min-w-[17rem]">
-                <Link to="/signup" onClick={() => trackEvent("Landing CTA Clicked", { placement: "hero" })}>Get Started for free</Link>
+                <Link to="/signup" onClick={() => trackEvent("Landing CTA Clicked", { placement: "hero" })}>{t("Get Started for free")}</Link>
               </Button>
               <Button asChild variant="outline" className="h-16 rounded-[1.55rem] border-[#17351a]/16 bg-white/75 px-10 text-lg font-semibold text-[#17351a] shadow-[0_20px_40px_-32px_rgba(23,53,26,0.8)] hover:bg-white hover:text-[#102712] sm:min-w-[14rem]">
-                <Link to="/showcase" onClick={() => trackEvent("Landing Demo CTA Clicked", { placement: "hero" })}>View Demo</Link>
+                <Link to="/showcase" onClick={() => trackEvent("Landing Demo CTA Clicked", { placement: "hero" })}>{t("View Demo")}</Link>
               </Button>
             </div>
           </div>
@@ -421,7 +430,7 @@ export const LandingPage: React.FC = () => {
               <div className="relative overflow-hidden rounded-[2.8rem] border border-black/5">
                 <img
                   src="/image_3.jpg"
-                  alt="Cafe owner presenting a digital loyalty card sign"
+                  alt={t("Cafe owner presenting a digital loyalty card sign")}
                   width={1536}
                   height={1024}
                   loading="eager"
@@ -432,7 +441,7 @@ export const LandingPage: React.FC = () => {
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/10 via-transparent to-white/10" />
                 <p className="absolute bottom-4 left-1/2 z-10 w-full max-w-[26rem] -translate-x-1/2 px-6 text-center font-mono text-xs text-[#0d235f]/75">
-                  Built for cafes, salons, and neighborhood brands.
+                  {t("Built for cafes, salons, and neighborhood brands.")}
                 </p>
               </div>
             </div>
@@ -466,22 +475,22 @@ export const LandingPage: React.FC = () => {
           <div className="order-2 max-w-[36rem] lg:order-2 lg:justify-self-center">
             <div style={rise(simplicity.visible, 0)}>
               <span className="section-chip mb-7 inline-flex items-center rounded-full border border-white/20 bg-white/12 px-5 py-2 text-[0.72rem] font-semibold uppercase tracking-[0.24em] text-white/80 backdrop-blur-sm">
-                Getting Started
+                {t("Getting Started")}
               </span>
             </div>
             <h2 style={rise(simplicity.visible, 70)} className="max-w-[9ch] text-[clamp(3rem,6vw,5.9rem)] font-black leading-[0.92] tracking-[-0.05em] text-[#fff3e8]">
-              Getting started takes four quick steps.
+              {t("Getting started takes four quick steps.")}
             </h2>
             <p style={rise(simplicity.visible, 160)} className="mt-8 max-w-[35rem] text-[clamp(1.05rem,1.55vw,1.38rem)] leading-[1.5] text-white/82">
-              Create your account, build a campaign, share the card, and start stamping. No paper cards and no customer app download.
+              {t("Create your account, build a campaign, share the card, and start stamping. No paper cards and no customer app download.")}
             </p>
             <div style={rise(simplicity.visible, 260)} className="mt-10 flex flex-wrap items-center gap-x-6 gap-y-3 text-sm font-semibold text-white/72">
-              <span>Four-step setup</span>
-              <span>Share by link or QR</span>
-              <span>Live stamp tracking</span>
+              <span>{t("Four-step setup")}</span>
+              <span>{t("Share by link or QR")}</span>
+              <span>{t("Live stamp tracking")}</span>
             </div>
             <p style={rise(simplicity.visible, 340)} className="mt-10 text-lg font-medium text-[#fff3e8]">
-              Minimal setup. No paper cards. No customer downloads.
+              {t("Minimal setup. No paper cards. No customer downloads.")}
             </p>
           </div>
 
@@ -491,11 +500,11 @@ export const LandingPage: React.FC = () => {
               <div className="relative">
                 <div className="mb-6 flex items-center justify-between gap-4">
                   <div>
-                    <p className="text-[0.72rem] font-semibold uppercase tracking-[0.22em] text-[#b24a00]">Quick launch</p>
-                    <p className="mt-2 text-[2rem] font-black tracking-[-0.04em] text-[#301204]">Four simple steps.</p>
+                    <p className="text-[0.72rem] font-semibold uppercase tracking-[0.22em] text-[#b24a00]">{t("Quick launch")}</p>
+                    <p className="mt-2 text-[2rem] font-black tracking-[-0.04em] text-[#301204]">{t("Four simple steps.")}</p>
                   </div>
                   <div className="rounded-full bg-[#e55d00] px-4 py-2 text-sm font-semibold text-white shadow-[0_16px_30px_-18px_rgba(132,38,0,0.65)]">
-                    Ready in minutes
+                    {t("Ready in minutes")}
                   </div>
                 </div>
                 <div className="grid gap-4 md:grid-cols-2">
@@ -529,9 +538,9 @@ export const LandingPage: React.FC = () => {
                       <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#ffe1cc] text-sm font-black text-[#9c3f00]">
                         {i + 1}
                       </div>
-                      <p className="mt-5 text-[11px] font-semibold uppercase tracking-[0.22em] text-[#c25a12]">{item.step}</p>
-                      <h3 className="mt-3 text-[1.65rem] font-semibold leading-[1.05] tracking-tight text-[#301204]">{item.title}</h3>
-                      <p className="mt-4 text-[15px] leading-7 text-[#724224]">{item.body}</p>
+                      <p className="mt-5 text-[11px] font-semibold uppercase tracking-[0.22em] text-[#c25a12]">{t(item.step)}</p>
+                      <h3 className="mt-3 text-[1.65rem] font-semibold leading-[1.05] tracking-tight text-[#301204]">{t(item.title)}</h3>
+                      <p className="mt-4 text-[15px] leading-7 text-[#724224]">{t(item.body)}</p>
                     </div>
                   ))}
                 </div>
@@ -560,17 +569,17 @@ export const LandingPage: React.FC = () => {
           <div className="max-w-[38rem]">
             <div style={rise(design.visible, 0)}>
               <span className="section-chip mb-7 inline-flex items-center rounded-full border border-white/20 bg-white/10 px-5 py-2 text-[0.72rem] font-semibold uppercase tracking-[0.24em] text-white/82 backdrop-blur-sm">
-                Design
+                {t("Design")}
               </span>
             </div>
             <h2 style={rise(design.visible, 70)} className="max-w-[9ch] text-[clamp(3rem,6vw,5.9rem)] font-black leading-[0.92] tracking-[-0.05em] text-white">
-              Make loyalty feel like part of your brand.
+              {t("Make loyalty feel like part of your brand.")}
             </h2>
             <p style={rise(design.visible, 160)} className="mt-8 max-w-[35rem] text-[clamp(1.05rem,1.55vw,1.38rem)] leading-[1.5] text-white/80">
-              Bring your logo, colors, and reward experience into one clean digital card customers instantly recognize.
+              {t("Bring your logo, colors, and reward experience into one clean digital card customers instantly recognize.")}
             </p>
             <p style={rise(design.visible, 340)} className="mt-10 text-lg font-medium text-white">
-              Simple to launch. Distinctive to customers.
+              {t("Simple to launch. Distinctive to customers.")}
             </p>
           </div>
           <div style={rise(design.visible, 100)} className="relative flex justify-center lg:justify-end">
@@ -578,7 +587,7 @@ export const LandingPage: React.FC = () => {
               <div className="relative overflow-hidden rounded-[2.8rem] shadow-[0_40px_90px_-38px_rgba(7,22,79,0.82)] ring-1 ring-black/8">
                 <img
                   src="/image_1.jpg"
-                  alt="Customer-facing loyalty experience"
+                  alt={t("Customer-facing loyalty experience")}
                   width={1536}
                   height={1024}
                   loading="lazy"
@@ -588,7 +597,7 @@ export const LandingPage: React.FC = () => {
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/12 via-transparent to-white/10" />
                 <p className="absolute bottom-6 left-6 rounded-[1.5rem] border border-white/22 bg-[#07164f]/45 px-5 py-4 text-base font-medium leading-[1.35] text-white shadow-[0_18px_45px_-28px_rgba(7,22,79,0.85)] backdrop-blur-md sm:bottom-8 sm:left-8 sm:text-lg">
-                  Your logo.<br />Your colors.<br />Your brand - elevated.
+                  {t("Your logo.")}<br />{t("Your colors.")}<br />{t("Your brand - elevated.")}
                 </p>
               </div>
             </div>
@@ -618,18 +627,18 @@ export const LandingPage: React.FC = () => {
           <div className="order-2 max-w-[38rem] lg:order-2">
             <div style={rise(intel.visible, 0)}>
               <span className="section-chip mb-7 inline-flex items-center rounded-full border border-[#4d4300]/10 bg-white/35 px-5 py-2 text-[0.72rem] font-semibold uppercase tracking-[0.24em] text-[#5a4f00] backdrop-blur-sm">
-                Intelligence
+                {t("Intelligence")}
               </span>
             </div>
             <h2 style={rise(intel.visible, 70)} className="max-w-[10ch] text-[clamp(3rem,6vw,5.8rem)] font-black leading-[0.92] tracking-[-0.05em] text-[#302900]">
-              See what drives repeat visits.
+              {t("See what drives repeat visits.")}
             </h2>
             <div style={rise(intel.visible, 170)} className="mt-8 space-y-5">
               {["Real-time trend views.", "Detailed campaign analysis.", "Seamless redemption tracking."].map(l => (
-                <p key={l} className="text-[1.18rem] text-[#302900]">{l}</p>
+                <p key={l} className="text-[1.18rem] text-[#302900]">{t(l)}</p>
               ))}
               <p className="mt-6 text-lg font-medium text-[#4f4500]">
-                The visibility your loyalty program has been waiting for.
+                {t("The visibility your loyalty program has been waiting for.")}
               </p>
             </div>
           </div>
@@ -641,7 +650,7 @@ export const LandingPage: React.FC = () => {
               <div className="relative overflow-hidden rounded-[2.8rem] border border-black/5 bg-white/85">
                 <img
                   src="/image_4.jpg"
-                  alt="Analytics dashboard screenshot with sample loyalty data"
+                  alt={t("Analytics dashboard screenshot with sample loyalty data")}
                   width={1536}
                   height={1024}
                   loading="lazy"
@@ -651,7 +660,7 @@ export const LandingPage: React.FC = () => {
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/8 via-transparent to-white/10" />
                 <p className="absolute bottom-6 left-6 rounded-[1.5rem] border border-black/10 bg-white/72 px-5 py-4 text-base font-medium leading-[1.35] text-[#473d00] shadow-[0_18px_40px_-28px_rgba(76,66,0,0.3)] backdrop-blur-md sm:bottom-8 sm:left-8 sm:text-lg">
-                  Sample data.<br />Real analytics view.<br />Built for quick decisions.
+                  {t("Sample data.")}<br />{t("Real analytics view.")}<br />{t("Built for quick decisions.")}
                 </p>
               </div>
             </div>
@@ -680,13 +689,13 @@ export const LandingPage: React.FC = () => {
                   </div>
                   <div className="w-full">
                   <p className="text-right text-6xl font-semibold tracking-tight">100%</p>
-                  <p className="mt-3 text-right text-xl font-medium text-[#d8ef24]/80">Paperless loyalty</p>
+                  <p className="mt-3 text-right text-xl font-medium text-[#d8ef24]/80">{t("Paperless loyalty")}</p>
                   </div>
                 </div>
                 <div className="max-w-[20rem] space-y-1 text-[0.98rem] leading-7 text-[#eef7a5]/80">
-                  <p>No more lost cards.</p>
-                  <p>No more faded ink.</p>
-                  <p>No more printing.</p>
+                  <p>{t("No more lost cards.")}</p>
+                  <p>{t("No more faded ink.")}</p>
+                  <p>{t("No more printing.")}</p>
                 </div>
               </div>
             </div>
@@ -697,8 +706,8 @@ export const LandingPage: React.FC = () => {
                   <QrCode className="h-9 w-9" strokeWidth={2.25} />
                 </div>
                 <div>
-                  <p className="text-[2.5rem] font-semibold tracking-tight leading-[1.02]">No App Required</p>
-                  <p className="mt-4 max-w-[16rem] text-xl font-semibold leading-snug">Scan QR and start collecting.</p>
+                  <p className="text-[2.5rem] font-semibold tracking-tight leading-[1.02]">{t("No App Required")}</p>
+                  <p className="mt-4 max-w-[16rem] text-xl font-semibold leading-snug">{t("Scan QR and start collecting.")}</p>
                 </div>
               </div>
             </div>
@@ -707,8 +716,8 @@ export const LandingPage: React.FC = () => {
               <div className="flex h-full flex-col justify-between">
                 <div className="flex h-[4.5rem] w-[4.5rem] items-center justify-center rounded-full border-4 border-white/40 text-[2.6rem]">$</div>
                 <div>
-                  <p className="text-[2.6rem] font-semibold tracking-tight">Lower</p>
-                  <p className="mt-3 text-xl font-semibold text-white/90">Printing costs</p>
+                  <p className="text-[2.6rem] font-semibold tracking-tight">{t("Lower")}</p>
+                  <p className="mt-3 text-xl font-semibold text-white/90">{t("Printing costs")}</p>
                 </div>
               </div>
             </div>
@@ -719,31 +728,31 @@ export const LandingPage: React.FC = () => {
                   <div className="flex h-[4.5rem] w-[4.5rem] items-center justify-center rounded-3xl border-2 border-white/30 bg-white/10">
                     <ChartNoAxesCombined className="h-9 w-9" strokeWidth={2.25} />
                   </div>
-                  <div className="text-right text-[0.95rem] text-white/75">Every visit tracked</div>
+                  <div className="text-right text-[0.95rem] text-white/75">{t("Every visit tracked")}</div>
                 </div>
                 <div>
-                  <p className="text-6xl font-semibold tracking-tight">Live</p>
-                  <p className="mt-3 text-xl font-semibold text-white/90">Customer progress</p>
+                  <p className="text-6xl font-semibold tracking-tight">{t("Live")}</p>
+                  <p className="mt-3 text-xl font-semibold text-white/90">{t("Customer progress")}</p>
                 </div>
               </div>
             </div>
           </div>
           <div className="max-w-[39rem] lg:justify-self-end">
-            <div style={rise(value.visible, 80)}><SectionLabel>Value</SectionLabel></div>
+            <div style={rise(value.visible, 80)}><SectionLabel>{t("Value")}</SectionLabel></div>
             <h2 style={rise(value.visible, 150)} className="mt-6 text-[clamp(3.2rem,5.8vw,5.9rem)] font-semibold leading-[0.96] tracking-tight text-[#1a1f33]">
-              Stop paying
+              {t("Stop paying")}
               <br />
-              for paper.
+              {t("for paper.")}
             </h2>
             <p style={rise(value.visible, 240)} className="hidden">
-              A smarter loyalty system — built to last.
+              {t("A smarter loyalty system — built to last.")}
             </p>
             <p style={rise(value.visible, 240)} className="mt-9 max-w-xl text-[clamp(1.12rem,1.55vw,1.35rem)] leading-relaxed text-[#22273a]">
-              Move your loyalty program into the browser with digital cards that are easier to issue, easier to stamp, and easier to track.
+              {t("Move your loyalty program into the browser with digital cards that are easier to issue, easier to stamp, and easier to track.")}
             </p>
             <div style={rise(value.visible, 320)} className="mt-12">
               <Button asChild className="glow-button h-[3.75rem] rounded-full bg-[#dcb7df] px-12 text-lg font-semibold text-black shadow-none hover:bg-[#d2a6d6]">
-                <Link to="/signup" onClick={() => trackEvent("Landing CTA Clicked", { placement: "value" })}>Get started for free</Link>
+                <Link to="/signup" onClick={() => trackEvent("Landing CTA Clicked", { placement: "value" })}>{t("Get started for free")}</Link>
               </Button>
             </div>
           </div>
@@ -760,7 +769,7 @@ export const LandingPage: React.FC = () => {
         <div ref={faq.ref} className="relative mx-auto flex min-h-[100svh] max-w-[92rem] flex-col px-6 py-24 sm:px-8 lg:px-10">
           <div style={rise(faq.visible, 0)} className="flex items-center justify-center pb-14 pt-2 sm:pb-16">
             <h2 className="text-center text-[clamp(3rem,8vw,6rem)] font-semibold leading-[0.98] tracking-tight text-[#f4d7e8]">
-              Questions? Answered
+              {t("Questions? Answered")}
             </h2>
           </div>
 
@@ -768,42 +777,42 @@ export const LandingPage: React.FC = () => {
             <Accordion type="single" collapsible className="flex w-full flex-col gap-5">
               <AccordionItem value="item-1" className="faq-card overflow-hidden rounded-[2.3rem] border-none bg-[#7f0018] px-7 sm:px-10 lg:px-12">
                 <AccordionTrigger className="min-h-[128px] text-left text-[1.6rem] font-semibold text-[#f5d7e7] hover:no-underline sm:text-[2rem]">
-                  Do customers need to download an app?
+                  {t("Do customers need to download an app?")}
                 </AccordionTrigger>
                 <AccordionContent className="pb-10 text-lg leading-8 text-[#f0b8cf] sm:text-xl">
-                  No. Customers open their digital card in a normal browser from a link you send them, so there is nothing to download.
+                  {t("No. Customers open their digital card in a normal browser from a link you send them, so there is nothing to download.")}
                 </AccordionContent>
               </AccordionItem>
               <AccordionItem value="item-2" className="faq-card overflow-hidden rounded-[2.3rem] border-none bg-[#7f0018] px-7 sm:px-10 lg:px-12">
                 <AccordionTrigger className="min-h-[128px] text-left text-[1.6rem] font-semibold text-[#f5d7e7] hover:no-underline sm:text-[2rem]">
-                  How simple is setup?
+                  {t("How simple is setup?")}
                 </AccordionTrigger>
                 <AccordionContent className="pb-10 text-lg leading-8 text-[#f0b8cf] sm:text-xl">
-                  Setup is a short four-step flow: create your account, create a campaign, issue a digital card to your customer, then start stamping.
+                  {t("Setup is a short four-step flow: create your account, create a campaign, issue a digital card to your customer, then start stamping.")}
                 </AccordionContent>
               </AccordionItem>
               <AccordionItem value="item-3" className="faq-card overflow-hidden rounded-[2.3rem] border-none bg-[#7f0018] px-7 sm:px-10 lg:px-12">
                 <AccordionTrigger className="min-h-[128px] text-left text-[1.6rem] font-semibold text-[#f5d7e7] hover:no-underline sm:text-[2rem]">
-                  Can I design the card to match my brand?
+                  {t("Can I design the card to match my brand?")}
                 </AccordionTrigger>
                 <AccordionContent className="pb-10 text-lg leading-8 text-[#f0b8cf] sm:text-xl">
-                  Yes. Your campaign is where you design the card, choose the reward, and set the stamp goal so the experience fits your business.
+                  {t("Yes. Your campaign is where you design the card, choose the reward, and set the stamp goal so the experience fits your business.")}
                 </AccordionContent>
               </AccordionItem>
               <AccordionItem value="item-4" className="faq-card overflow-hidden rounded-[2.3rem] border-none bg-[#7f0018] px-7 sm:px-10 lg:px-12">
                 <AccordionTrigger className="min-h-[128px] text-left text-[1.6rem] font-semibold text-[#f5d7e7] hover:no-underline sm:text-[2rem]">
-                  How do customers receive their card?
+                  {t("How do customers receive their card?")}
                 </AccordionTrigger>
                 <AccordionContent className="pb-10 text-lg leading-8 text-[#f0b8cf] sm:text-xl">
-                  You issue a digital card and share it as a link. Customers open it on their phone in the browser and can use it right away.
+                  {t("You issue a digital card and share it as a link. Customers open it on their phone in the browser and can use it right away.")}
                 </AccordionContent>
               </AccordionItem>
               <AccordionItem value="item-5" className="faq-card overflow-hidden rounded-[2.3rem] border-none bg-[#7f0018] px-7 sm:px-10 lg:px-12">
                 <AccordionTrigger className="min-h-[128px] text-left text-[1.6rem] font-semibold text-[#f5d7e7] hover:no-underline sm:text-[2rem]">
-                  How do staff add stamps?
+                  {t("How do staff add stamps?")}
                 </AccordionTrigger>
                 <AccordionContent className="pb-10 text-lg leading-8 text-[#f0b8cf] sm:text-xl">
-                  Staff log in to Stampee, open the customer card, and record the visit. The stamp progress updates immediately.
+                  {t("Staff log in to Stampee, open the customer card, and record the visit. The stamp progress updates immediately.")}
                 </AccordionContent>
               </AccordionItem>
             </Accordion>
@@ -817,16 +826,16 @@ export const LandingPage: React.FC = () => {
           <div className="drift-a absolute right-[-5%] bottom-[-5%] h-[400px] w-[400px] rounded-full bg-violet-300/14 blur-[100px]" />
         </div>
         <div ref={cta.ref} className="relative mx-auto flex min-h-[100svh] max-w-[82rem] flex-col items-center justify-center px-6 py-24 text-center sm:px-8 lg:px-10">
-          <div style={rise(cta.visible, 0)}><SectionLabel light>Get started</SectionLabel></div>
+          <div style={rise(cta.visible, 0)}><SectionLabel light>{t("Get started")}</SectionLabel></div>
           <h2 style={rise(cta.visible, 80)} className="mt-6 text-[clamp(3rem,6vw,5.6rem)] font-semibold leading-[0.98] tracking-tight text-white">
-            Turn first-time customers<br />into repeat regulars.
+            {t("Turn first-time customers")}<br />{t("into repeat regulars.")}
           </h2>
           <p style={rise(cta.visible, 180)} className="mx-auto mt-7 max-w-xl text-[clamp(1.08rem,1.45vw,1.32rem)] leading-relaxed text-white/50">
-            Create your digital stamp card today.
+            {t("Create your digital stamp card today.")}
           </p>
           <div style={rise(cta.visible, 280)}>
             <Button asChild className="glow-button mt-12 h-[3.75rem] rounded-full bg-white px-14 text-base font-semibold text-[#1d1d1f] shadow-xl shadow-white/10 hover:bg-white/90">
-              <Link to="/signup" onClick={() => trackEvent("Landing CTA Clicked", { placement: "footer" })}>Start Free</Link>
+              <Link to="/signup" onClick={() => trackEvent("Landing CTA Clicked", { placement: "footer" })}>{t("Start Free")}</Link>
             </Button>
           </div>
         </div>
@@ -836,40 +845,40 @@ export const LandingPage: React.FC = () => {
       <footer className="border-t border-white/[0.07] bg-[#1d1d1f] px-6 py-8">
         <div className="mx-auto flex max-w-[88rem] flex-col items-center gap-3 sm:flex-row sm:justify-between">
           <Link to="/" className="inline-flex items-center">
-            <img src="/stampee.svg" alt="Stampee" className="h-7 w-auto opacity-35 invert" />
+            <img src="/stampee.svg" alt={"Stampee"} className="h-7 w-auto opacity-35 invert" />
           </Link>
           <div className="flex flex-col items-center gap-3 sm:flex-row sm:gap-6">
             <Link
               to="/showcase"
               className="text-xs font-medium text-white/55 transition-colors hover:text-white"
             >
-              Demos & Templates
+              {t("Demos & Templates")}
             </Link>
             <Link
               to="/articles"
               className="text-xs font-medium text-white/55 transition-colors hover:text-white"
             >
-              Articles
+              {t("Articles")}
             </Link>
             <Link
               to="/privacy-policy"
               className="text-xs font-medium text-white/55 transition-colors hover:text-white"
             >
-              Privacy Policy
+              {t("Privacy Policy")}
             </Link>
             <Link
               to="/cookie"
               className="text-xs font-medium text-white/55 transition-colors hover:text-white"
             >
-              Cookie Policy
+              {t("Cookie Policy")}
             </Link>
             <Link
               to="/terms"
               className="text-xs font-medium text-white/55 transition-colors hover:text-white"
             >
-              Terms
+              {t("Terms")}
             </Link>
-            <p className="text-xs text-white/25">© {new Date().getFullYear()} Stampee. All rights reserved.</p>
+            <p className="text-xs text-white/25">© {new Date().getFullYear()} Stampee. {t("All rights reserved.")}</p>
           </div>
         </div>
       </footer>

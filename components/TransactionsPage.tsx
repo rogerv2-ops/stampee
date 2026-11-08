@@ -1,7 +1,8 @@
 import React, { useEffect, useState, useMemo } from 'react';
+import { useI18n } from "../lib/i18n";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
 import { Input } from "./ui/input";
-import { 
+import {
     Search, Calendar, History,
     Gift, Plus, Minus, CreditCard, ArrowUpDown, Download
 } from "lucide-react";
@@ -27,6 +28,7 @@ const escapeCsvValue = (value: string | number | undefined) => {
 };
 
 export const TransactionsPage: React.FC<TransactionsPageProps> = ({ customers }) => {
+  const { t, locale } = useI18n();
   const PAGE_SIZE = 50;
   const [searchQuery, setSearchQuery] = useState("");
   const [dateFilter, setDateFilter] = useState("");
@@ -35,8 +37,8 @@ export const TransactionsPage: React.FC<TransactionsPageProps> = ({ customers })
 
   // 1. Flatten Data
   const allTransactions: FlatTransaction[] = useMemo(() => {
-      return customers.flatMap(customer => 
-          customer.cards.flatMap(card => 
+      return customers.flatMap(customer =>
+          customer.cards.flatMap(card =>
               (card.history || []).map(tx => ({
                   ...tx,
                   customerName: customer.name,
@@ -46,8 +48,8 @@ export const TransactionsPage: React.FC<TransactionsPageProps> = ({ customers })
               }))
           )
       ).sort((a, b) => {
-          return sortOrder === 'desc' 
-            ? b.timestamp - a.timestamp 
+          return sortOrder === 'desc'
+            ? b.timestamp - a.timestamp
             : a.timestamp - b.timestamp;
       });
   }, [customers, sortOrder]);
@@ -56,13 +58,13 @@ export const TransactionsPage: React.FC<TransactionsPageProps> = ({ customers })
   const filteredTransactions = useMemo(() => {
       return allTransactions.filter(tx => {
           const lowerQuery = searchQuery.toLowerCase();
-          const matchesSearch = 
+          const matchesSearch =
               tx.customerName.toLowerCase().includes(lowerQuery) ||
               tx.campaignName.toLowerCase().includes(lowerQuery) ||
               tx.cardId.toLowerCase().includes(lowerQuery) ||
               (tx.remarks && tx.remarks.toLowerCase().includes(lowerQuery));
 
-          const matchesDate = dateFilter 
+          const matchesDate = dateFilter
               ? new Date(tx.timestamp).toLocaleDateString() === new Date(dateFilter).toLocaleDateString()
               : true;
 
@@ -85,16 +87,16 @@ export const TransactionsPage: React.FC<TransactionsPageProps> = ({ customers })
 
   const handleExportCsv = () => {
       const headers = [
-          "Recorded At",
-          "Customer Name",
-          "Customer Email",
-          "Campaign",
-          "Card ID",
-          "Action",
+          t("Recorded At"),
+          t("Customer Name"),
+          t("Customer Email"),
+          t("Campaign"),
+          t("Card ID"),
+          t("Action"),
           "Amount",
-          "Processed By",
-          "Actor Role",
-          "Remarks"
+          t("Processed By"),
+          t("Actor Role"),
+          t("Remarks")
       ];
 
       const rows = filteredTransactions.map((tx) => [
@@ -103,10 +105,10 @@ export const TransactionsPage: React.FC<TransactionsPageProps> = ({ customers })
           tx.customerEmail,
           tx.campaignName,
           tx.cardId,
-          getLabel(tx.type),
+          getLabel(tx.type, t),
           tx.amount,
-          tx.actorName || "Owner",
-          tx.actorRole === "staff" ? "Staff" : "Owner",
+          tx.actorName || t("Owner"),
+          tx.actorRole === "staff" ? t("Staff") : t("Owner"),
           tx.remarks || ""
       ]);
 
@@ -146,7 +148,7 @@ export const TransactionsPage: React.FC<TransactionsPageProps> = ({ customers })
       }
   };
 
-  const getLabel = (type: Transaction['type']) => {
+  const getLabel = (type: Transaction['type'], t: (source: string, vars?: Record<string, string | number>) => string) => {
       switch(type) {
           case 'redeem': return "Redeemed";
           case 'stamp_remove': return "Removed";
@@ -159,8 +161,8 @@ export const TransactionsPage: React.FC<TransactionsPageProps> = ({ customers })
     <div className="p-4 md:p-8 space-y-6 animate-fade-in h-full flex flex-col bg-gray-50/50">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
-                <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground">Transactions</h1>
-                <p className="text-muted-foreground">History of all stamps, redemptions, and issuances.</p>
+                <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground">{t("Transactions")}</h1>
+                <p className="text-muted-foreground">{t("History of all stamps, redemptions, and issuances.")}</p>
             </div>
         </div>
 
@@ -168,17 +170,17 @@ export const TransactionsPage: React.FC<TransactionsPageProps> = ({ customers })
         <div className="flex flex-col sm:flex-row gap-4 bg-white p-4 rounded-xl border shadow-sm">
             <div className="flex items-center space-x-2 bg-gray-50 px-3 py-2 rounded-lg border w-full max-w-md focus-within:ring-2 focus-within:ring-ring focus-within:bg-white transition-colors">
                 <Search className="text-gray-400" size={20} />
-                <Input 
-                    className="flex-1 border-none shadow-none focus-visible:ring-0 px-0 bg-transparent" 
-                    placeholder="Search by name, card ID, or campaign..." 
+                <Input
+                    className="flex-1 border-none shadow-none focus-visible:ring-0 px-0 bg-transparent"
+                    placeholder={t("Search by name, card ID, or campaign...")}
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                 />
             </div>
-            
+
             <div className="flex items-center space-x-2 bg-gray-50 px-3 py-2 rounded-lg border w-full sm:w-auto focus-within:ring-2 focus-within:ring-ring focus-within:bg-white transition-colors">
                 <Calendar className="text-gray-400" size={20} />
-                <input 
+                <input
                     type="date"
                     className="bg-transparent text-sm outline-none text-gray-600"
                     value={dateFilter}
@@ -186,7 +188,7 @@ export const TransactionsPage: React.FC<TransactionsPageProps> = ({ customers })
                 />
                 {dateFilter && (
                     <button onClick={() => setDateFilter("")} className="ml-2 text-xs text-muted-foreground hover:text-foreground">
-                        Clear
+                        {t("Clear")}
                     </button>
                 )}
             </div>
@@ -200,11 +202,11 @@ export const TransactionsPage: React.FC<TransactionsPageProps> = ({ customers })
                     disabled={filteredTransactions.length === 0}
                  >
                     <Download size={16} />
-                    Export CSV
+                    {t("Export CSV")}
                  </Button>
                  <Button variant="ghost" size="sm" onClick={toggleSort} className="gap-2 text-muted-foreground">
                     <ArrowUpDown size={16} />
-                    {sortOrder === 'desc' ? 'Newest First' : 'Oldest First'}
+                    {sortOrder === 'desc' ? t("Newest First") : t("Oldest First")}
                  </Button>
             </div>
         </div>
@@ -214,12 +216,12 @@ export const TransactionsPage: React.FC<TransactionsPageProps> = ({ customers })
             <Table>
                 <TableHeader>
                     <TableRow className="bg-muted/30">
-                        <TableHead className="w-[180px]">Date & Time</TableHead>
-                        <TableHead>Customer</TableHead>
-                        <TableHead>Campaign / Card ID</TableHead>
-                        <TableHead>Action</TableHead>
-                        <TableHead>By</TableHead>
-                        <TableHead className="text-right">Remarks</TableHead>
+                        <TableHead className="w-[180px]">{t("Date & Time")}</TableHead>
+                        <TableHead>{t("Customer")}</TableHead>
+                        <TableHead>{t("Campaign / Card ID")}</TableHead>
+                        <TableHead>{t("Action")}</TableHead>
+                        <TableHead>{t("By")}</TableHead>
+                        <TableHead className="text-right">{t("Remarks")}</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -227,7 +229,7 @@ export const TransactionsPage: React.FC<TransactionsPageProps> = ({ customers })
                         <TableRow>
                             <TableCell colSpan={6} className="text-center h-32 text-muted-foreground flex-col gap-2">
                                 <div className="flex justify-center mb-2"><History size={24} className="opacity-20"/></div>
-                                No transactions found matching your filters.
+                                {t("No transactions found matching your filters.")}
                             </TableCell>
                         </TableRow>
                     ) : (
@@ -255,16 +257,16 @@ export const TransactionsPage: React.FC<TransactionsPageProps> = ({ customers })
                                         getBadgeColor(tx.type)
                                     )}>
                                         {getIcon(tx.type)}
-                                        {getLabel(tx.type)}
+                                        {getLabel(tx.type, t)}
                                     </div>
                                 </TableCell>
                                 <TableCell>
                                     <div className="flex flex-col">
                                         <span className="text-sm font-medium">
-                                            {tx.actorName || "Owner"}
+                                            {tx.actorName || t("Owner")}
                                         </span>
                                         <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                                            {tx.actorRole === "staff" ? "Staff" : "Owner"}
+                                            {tx.actorRole === "staff" ? t("Staff") : t("Owner")}
                                         </span>
                                     </div>
                                 </TableCell>
@@ -279,11 +281,11 @@ export const TransactionsPage: React.FC<TransactionsPageProps> = ({ customers })
         </div>
         <div className="flex flex-col items-center gap-3">
             <div className="text-xs text-muted-foreground text-center">
-                Showing {visibleTransactions.length} of {filteredTransactions.length} transaction{filteredTransactions.length !== 1 && 's'}
+                {t("Showing {shown} of {total} {unit}", { shown: visibleTransactions.length, total: filteredTransactions.length, unit: filteredTransactions.length === 1 ? t("transaction") : t("transactions") })}
             </div>
             {hasMoreTransactions && (
                 <Button variant="outline" size="sm" onClick={handleLoadMore}>
-                    Load more
+                    {t("Load more")}
                 </Button>
             )}
         </div>

@@ -5,12 +5,14 @@ import { AuthLayout } from "./AuthLayout";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { useAuth } from "./AuthProvider";
+import { useI18n } from "../lib/i18n";
 
 const inputCls =
   "h-12 rounded-xl border-black/[0.1] bg-[#f5f5f7] text-[#1d1d1f] placeholder:text-[#6e6e73]/50 focus-visible:border-[#1d1d1f] focus-visible:ring-0";
 const labelCls = "block text-[11px] font-semibold uppercase tracking-[0.16em] text-[#6e6e73]";
 
 export const ForgotPasswordPage: React.FC = () => {
+  const { t } = useI18n();
   const { currentUser, resetPassword } = useAuth();
   const [email, setEmail] = useState("");
   const [error, setError] = useState("");
@@ -41,7 +43,7 @@ export const ForgotPasswordPage: React.FC = () => {
   if (sent) {
     return (
       <AuthLayout
-        title="Check your inbox."
+        title={t("Check your inbox.")}
         subtitle="We sent a password reset link to your email."
         badge="Done"
         theme="login"
@@ -51,16 +53,16 @@ export const ForgotPasswordPage: React.FC = () => {
             <CheckCircle2 className="h-14 w-14 text-green-500" />
           </div>
           <div>
-            <h2 className="text-xl font-semibold text-[#1d1d1f]">Reset link sent!</h2>
+            <h2 className="text-xl font-semibold text-[#1d1d1f]">{t("Reset link sent!")}</h2>
             <p className="mt-1 text-sm text-[#6e6e73]">
-              Check <span className="font-medium text-[#1d1d1f]">{email}</span> for a password reset link.
+              {t("Check {email} for a password reset link.", { email })}
             </p>
           </div>
           <Link
             to="/login"
             className="inline-flex h-12 w-full items-center justify-center rounded-full bg-[#1d1d1f] text-base font-medium text-white shadow-sm hover:bg-black/80"
           >
-            Back to Sign In
+            {t("Back to Sign In")}
             <ArrowRight className="ml-2 h-4 w-4" />
           </Link>
         </div>
@@ -70,19 +72,19 @@ export const ForgotPasswordPage: React.FC = () => {
 
   return (
     <AuthLayout
-      title="Forgot your password?"
+      title={t("Forgot your password?")}
       subtitle="Enter your account email and we'll send you a reset link."
       badge="Reset password"
       theme="login"
     >
       <form className="space-y-5" onSubmit={handleSubmit}>
         <div className="mb-2">
-          <h2 className="text-xl font-semibold text-[#1d1d1f]">Find your account</h2>
-          <p className="mt-1 text-sm text-[#6e6e73]">Enter the email you used to sign up.</p>
+          <h2 className="text-xl font-semibold text-[#1d1d1f]">{t("Find your account")}</h2>
+          <p className="mt-1 text-sm text-[#6e6e73]">{t("Enter the email you used to sign up.")}</p>
         </div>
 
         <div className="space-y-1.5">
-          <label className={labelCls}>Email</label>
+          <label className={labelCls}>{t("Email")}</label>
           <Input
             value={email}
             onChange={(e) => setEmail(e.target.value)}
@@ -96,7 +98,7 @@ export const ForgotPasswordPage: React.FC = () => {
 
         {error && (
           <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
-            {error}
+            {t(error)}
           </div>
         )}
 
@@ -105,14 +107,14 @@ export const ForgotPasswordPage: React.FC = () => {
           disabled={busy}
           className="h-12 w-full rounded-full bg-[#1d1d1f] text-base font-medium text-white shadow-sm hover:bg-black/80"
         >
-          {busy ? "Sending..." : "Send Reset Link"}
+          {busy ? t("Sending...") : t("Send Reset Link")}
           {!busy && <ArrowRight className="ml-2 h-4 w-4" />}
         </Button>
 
         <p className="text-center text-sm text-[#6e6e73]">
-          Remember your password?{" "}
+          {t("Remember your password?")}{" "}
           <Link to="/login" className="font-semibold text-[#1d1d1f] underline-offset-2 hover:underline">
-            Sign in
+            {t("Sign in")}
           </Link>
         </p>
       </form>

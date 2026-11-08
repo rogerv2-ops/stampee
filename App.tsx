@@ -19,6 +19,7 @@ import { isSupabaseConfigured, supabase } from './lib/supabase';
 import { useSubscription } from './lib/useSubscription';
 import { SubscriptionProvider } from './components/SubscriptionContext';
 import { APP_ORIGIN } from './lib/siteConfig';
+import { useI18n } from './lib/i18n';
 
 const SITE_ORIGIN = APP_ORIGIN;
 const DEFAULT_SOCIAL_DESCRIPTION = 'Stampee is a digital loyalty card platform for small businesses, including loyalty program for cafes, loyalty program for spa, loyalty program for laundry, loyalty program for carwash, and loyalty program for salons.';
@@ -143,19 +144,20 @@ const getSeoForPathname = (pathname: string): SeoConfig => {
 
 const SeoManager: React.FC = () => {
   const location = useLocation();
+  const { t, language } = useI18n();
 
   useEffect(() => {
     const seo = getSeoForPathname(location.pathname);
-    const socialDescription = seo.socialDescription ?? seo.description;
+    const socialDescription = t(seo.socialDescription ?? seo.description);
 
-    document.title = seo.title;
+    document.title = t(seo.title);
     setCanonicalLink(seo.canonical);
-    setMetaTag('name', 'description', seo.description);
+    setMetaTag('name', 'description', t(seo.description));
     setMetaTag('name', 'robots', seo.robots);
-    setMetaTag('property', 'og:locale', 'en_US');
+    setMetaTag('property', 'og:locale', language === 'es' ? 'es_PE' : 'en_US');
     setMetaTag('property', 'og:type', seo.type ?? 'website');
     setMetaTag('property', 'og:site_name', 'Stampee');
-    setMetaTag('property', 'og:title', seo.title);
+    setMetaTag('property', 'og:title', t(seo.title));
     setMetaTag('property', 'og:description', socialDescription);
     setMetaTag('property', 'og:url', seo.canonical);
     setMetaTag('property', 'og:image', DEFAULT_OG_IMAGE);
@@ -164,20 +166,21 @@ const SeoManager: React.FC = () => {
     setMetaTag('property', 'og:image:type', 'image/jpeg');
     setMetaTag('property', 'og:image:width', '1536');
     setMetaTag('property', 'og:image:height', '1024');
-    setMetaTag('property', 'og:image:alt', 'Stampee digital loyalty card preview');
+    setMetaTag('property', 'og:image:alt', t('Stampee digital loyalty card preview'));
     setMetaTag('name', 'twitter:card', 'summary_large_image');
-    setMetaTag('name', 'twitter:title', seo.title);
+    setMetaTag('name', 'twitter:title', t(seo.title));
     setMetaTag('name', 'twitter:description', socialDescription);
     setMetaTag('name', 'twitter:url', seo.canonical);
     setMetaTag('name', 'twitter:image', DEFAULT_OG_IMAGE);
     setMetaTag('name', 'twitter:image:src', DEFAULT_OG_IMAGE);
-    setMetaTag('name', 'twitter:image:alt', 'Stampee digital loyalty card preview');
-  }, [location.pathname]);
+    setMetaTag('name', 'twitter:image:alt', t('Stampee digital loyalty card preview'));
+  }, [location.pathname, t, language]);
 
   return null;
 };
 
 const PublicCardWrapper: React.FC = () => {
+  const { t } = useI18n();
   const { slug, uniqueId } = useParams<{ slug: string; uniqueId: string }>();
   const [loading, setLoading] = useState(true);
   const [cardData, setCardData] = useState<{
@@ -267,7 +270,7 @@ const PublicCardWrapper: React.FC = () => {
   if (!cardData) {
     return (
       <div className="h-screen flex items-center justify-center px-6 text-center text-muted-foreground">
-        {isSupabaseConfigured ? 'Card not found.' : SERVICE_UNAVAILABLE_MESSAGE}
+        {t(isSupabaseConfigured ? 'Card not found.' : SERVICE_UNAVAILABLE_MESSAGE)}
       </div>
     );
   }
@@ -319,10 +322,10 @@ const PublicCardWrapper: React.FC = () => {
               <div className="mx-auto mb-3 h-12 w-12 rounded-full bg-gray-100 flex items-center justify-center">
                 <Lock size={22} className="text-gray-600" />
               </div>
-              <h2 className="text-xl font-bold text-gray-900">Redeemed</h2>
-              <p className="mt-1 text-sm text-gray-600">This card is closed.</p>
+              <h2 className="text-xl font-bold text-gray-900">{t('Redeemed')}</h2>
+              <p className="mt-1 text-sm text-gray-600">{t('This card is closed.')}</p>
               <div className="mt-3 text-xs text-gray-500 font-mono">
-                Card ID: {card.uniqueId}
+                {t('Card ID:')} {card.uniqueId}
               </div>
             </div>
           </div>
@@ -333,6 +336,7 @@ const PublicCardWrapper: React.FC = () => {
 };
 
 const StaffScanEntryWrapper: React.FC = () => {
+  const { t } = useI18n();
   const { slug, uniqueId } = useParams<{ slug: string; uniqueId: string }>();
   const navigate = useNavigate();
   const { currentOwner, currentUser, activeBusiness, businesses, switchBusiness, loading } = useAuth();
@@ -394,7 +398,7 @@ const StaffScanEntryWrapper: React.FC = () => {
   if (!context) {
     return (
       <div className="h-screen flex items-center justify-center px-6 text-center text-muted-foreground">
-        Card not found.
+        {t('Card not found.')}
       </div>
     );
   }
@@ -402,7 +406,7 @@ const StaffScanEntryWrapper: React.FC = () => {
   if (!currentUser || !currentOwner) {
     return (
       <div className="h-screen flex items-center justify-center px-6 text-center text-muted-foreground">
-        Redirecting to staff login...
+        {t('Redirecting to staff login...')}
       </div>
     );
   }
@@ -411,9 +415,9 @@ const StaffScanEntryWrapper: React.FC = () => {
     return (
       <div className="h-screen flex items-center justify-center bg-background px-6">
         <div className="w-full max-w-md rounded-2xl border bg-card p-6 text-center shadow-sm">
-          <h1 className="text-xl font-semibold text-foreground">Wrong business</h1>
+          <h1 className="text-xl font-semibold text-foreground">{t('Wrong business')}</h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            This card is not part of your business.
+            {t('This card is not part of your business.')}
           </p>
         </div>
       </div>
@@ -422,12 +426,13 @@ const StaffScanEntryWrapper: React.FC = () => {
 
   return (
     <div className="h-screen flex items-center justify-center px-6 text-center text-muted-foreground">
-      Opening kiosk...
+      {t('Opening kiosk...')}
     </div>
   );
 };
 
 const ActiveCardWrapper: React.FC<{ templates: Template[] }> = ({ templates }) => {
+  const { t } = useI18n();
   const { cardId } = useParams<{ cardId: string }>();
   const navigate = useNavigate();
   const template = templates.find(t => t.id === cardId);
@@ -439,7 +444,7 @@ const ActiveCardWrapper: React.FC<{ templates: Template[] }> = ({ templates }) =
       <button
         onClick={() => navigate('/campaigns')}
         className="absolute top-6 left-6 z-50 bg-black/50 text-white rounded-full p-2 hover:bg-black/70 transition-colors backdrop-blur-sm"
-        title="Close"
+        title={t('Close')}
       >
         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
       </button>
@@ -508,6 +513,7 @@ const EditorWrapper: React.FC<{ onSave: (t: Template) => Promise<void>; template
 };
 
 const DashboardLayout: React.FC = () => {
+  const { t } = useI18n();
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
   const location = useLocation();
 
@@ -523,13 +529,13 @@ const DashboardLayout: React.FC = () => {
           <button
             className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-border/80 bg-background shadow-subtle"
             onClick={() => setIsMobileNavOpen(true)}
-            aria-label="Open navigation menu"
+            aria-label={t('Open navigation menu')}
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
               <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
             </svg>
           </button>
-          <div className="text-sm font-semibold">{activeTitle}</div>
+          <div className="text-sm font-semibold">{t(activeTitle)}</div>
           <div className="h-10 w-10" />
         </div>
 
@@ -546,11 +552,11 @@ const DashboardLayout: React.FC = () => {
             isMobileNavOpen ? "translate-x-0" : "-translate-x-full"
           )}>
             <div className="flex items-center justify-between px-4 py-4 border-b">
-              <span className="text-sm font-semibold">Menu</span>
+              <span className="text-sm font-semibold">{t('Menu')}</span>
               <button
                 className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-border/80"
                 onClick={() => setIsMobileNavOpen(false)}
-                aria-label="Close navigation menu"
+                aria-label={t('Close navigation menu')}
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 6l12 12M18 6L6 18" />
@@ -582,6 +588,7 @@ const DashboardLayout: React.FC = () => {
 };
 
 const AppRoutes: React.FC = () => {
+  const { t } = useI18n();
   const { currentOwner, activeBusiness, isStaff } = useAuth();
   const [createdCards, setCreatedCards] = useState<Template[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -670,7 +677,7 @@ const AppRoutes: React.FC = () => {
     <SubscriptionProvider value={sub}>
       {!isSupabaseConfigured && (
         <div className="border-b border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-          {SERVICE_UNAVAILABLE_MESSAGE}
+          {t(SERVICE_UNAVAILABLE_MESSAGE)}
         </div>
       )}
       <Routes>

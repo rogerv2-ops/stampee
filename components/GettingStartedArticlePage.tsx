@@ -1,3 +1,4 @@
+import { useI18n } from "../lib/i18n";
 import React from "react";
 import { Link } from "react-router-dom";
 import { ArrowLeft, ArrowRight, CheckCircle2, Clock3, Sparkles } from "lucide-react";
@@ -72,6 +73,7 @@ const checklist = [
 ];
 
 export const GettingStartedArticlePage: React.FC = () => {
+  const { t, locale } = useI18n();
   const { currentUser, isStaff } = useAuth();
   const primaryPath = currentUser ? (isStaff ? "/issued-cards" : "/dashboard") : "/signup";
   const primaryLabel = currentUser ? "Open dashboard" : "Create account";
@@ -104,20 +106,20 @@ export const GettingStartedArticlePage: React.FC = () => {
       <header className="fixed top-0 z-30 w-full border-b border-black/[0.06] bg-white/75 backdrop-blur-2xl">
         <div className="mx-auto flex max-w-[88rem] items-center justify-between px-4 py-4 sm:px-6">
           <Link to="/" className="inline-flex items-center gap-3">
-            <img src="/stampee.svg" alt="Stampee" className="h-8 w-auto" />
+            <img src="/stampee.svg" alt={"Stampee"} className="h-8 w-auto" />
           </Link>
           <div className="flex items-center gap-2">
             <Button asChild variant="ghost" className="rounded-full text-sm text-[#1d1d1f] hover:bg-black/[0.06]">
               <Link to="/">
                 <ArrowLeft className="mr-2 h-4 w-4" />
-                Home
+                {t("Home")}
               </Link>
             </Button>
             <Button asChild variant="ghost" className="hidden rounded-full text-sm text-[#1d1d1f] hover:bg-black/[0.06] sm:inline-flex">
-              <Link to="/articles">Articles</Link>
+              <Link to="/articles">{t("Articles")}</Link>
             </Button>
             <Button asChild className="rounded-full bg-[#1d1d1f] px-5 text-sm font-medium text-white hover:bg-black/80">
-              <Link to={primaryPath}>{primaryLabel}</Link>
+              <Link to={primaryPath}>{t(primaryLabel)}</Link>
             </Button>
           </div>
         </div>
@@ -135,33 +137,33 @@ export const GettingStartedArticlePage: React.FC = () => {
             <div className="max-w-[42rem]">
               <div className="gs-chip mb-7 inline-flex items-center gap-2 rounded-full border border-[#17351a]/10 bg-white/35 px-5 py-2 text-[0.72rem] font-semibold uppercase tracking-[0.24em] text-[#284b1f] backdrop-blur-sm">
                 <Sparkles className="h-3.5 w-3.5" />
-                Getting Started
+                {t("Getting Started")}
               </div>
               <h1 className="max-w-[11ch] text-[clamp(3.2rem,6.5vw,6rem)] font-black leading-[0.92] tracking-[-0.05em] text-[#17351a]">
-                Launch your first loyalty campaign in one clean pass.
+                {t("Launch your first loyalty campaign in one clean pass.")}
               </h1>
               <p className="mt-8 max-w-[38rem] text-[clamp(1.08rem,1.65vw,1.42rem)] leading-[1.45] text-[#23461d]/82">
-                This guide follows the same flow your business will take inside Stampee: set up the account, shape the offer, test the customer journey, and go live with confidence.
+                {t("This guide follows the same flow your business will take inside Stampee: set up the account, shape the offer, test the customer journey, and go live with confidence.")}
               </p>
               <div className="mt-8 flex flex-wrap gap-3 text-sm font-semibold text-[#23461d]/78">
                 <div className="inline-flex items-center gap-2 rounded-full bg-white/55 px-4 py-2">
                   <Clock3 className="h-4 w-4" />
-                  10 minute setup
+                  {t("10 minute setup")}
                 </div>
                 <div className="inline-flex items-center gap-2 rounded-full bg-white/55 px-4 py-2">
                   <CheckCircle2 className="h-4 w-4" />
-                  Best for first-time owners
+                  {t("Best for first-time owners")}
                 </div>
               </div>
               <div className="mt-10 flex flex-wrap gap-4">
                 <Button asChild className="h-14 rounded-[1.4rem] bg-[#17351a] px-8 text-base font-semibold text-white shadow-[0_26px_50px_-28px_rgba(23,53,26,0.85)] hover:bg-[#102712]">
                   <Link to={primaryPath}>
-                    {primaryLabel}
+                    {t(primaryLabel)}
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </Link>
                 </Button>
                 <Button asChild variant="ghost" className="h-14 rounded-[1.4rem] bg-white/55 px-8 text-base font-medium text-[#17351a] hover:bg-white/75">
-                  <Link to="#steps">View the steps</Link>
+                  <Link to="#steps">{t("View the steps")}</Link>
                 </Button>
               </div>
             </div>
@@ -169,27 +171,27 @@ export const GettingStartedArticlePage: React.FC = () => {
             <div className="gs-panel relative flex justify-center lg:justify-end">
               <div className="w-full max-w-[32rem] overflow-hidden rounded-[2.8rem] border border-black/5 bg-white/88 shadow-[0_42px_90px_-38px_rgba(23,53,26,0.36)] backdrop-blur">
                 <div className="border-b border-black/[0.06] bg-[linear-gradient(180deg,rgba(255,255,255,0.55)_0%,rgba(255,255,255,0)_100%)] px-6 py-6">
-                  <p className="text-[0.72rem] font-semibold uppercase tracking-[0.22em] text-[#7a812f]">Quick launch</p>
-                  <p className="mt-2 text-[2rem] font-black tracking-[-0.04em] text-[#17351a]">Six steps to live.</p>
+                  <p className="text-[0.72rem] font-semibold uppercase tracking-[0.22em] text-[#7a812f]">{t("Quick launch")}</p>
+                  <p className="mt-2 text-[2rem] font-black tracking-[-0.04em] text-[#17351a]">{t("Six steps to live.")}</p>
                 </div>
                 <div className="space-y-4 px-6 py-6">
                   {steps.slice(0, 4).map((step, index) => (
-                    <div key={step.title} className="rounded-[1.6rem] border border-black/[0.06] bg-white/80 px-4 py-4">
+                    <div key={t(step.title)} className="rounded-[1.6rem] border border-black/[0.06] bg-white/80 px-4 py-4">
                       <div className="flex items-start gap-3">
                         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[#17351a] text-sm font-black text-white">
                           {index + 1}
                         </div>
                         <div>
-                          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#6b7240]">Step {index + 1}</p>
-                          <p className="mt-1 text-base font-semibold leading-tight text-[#1d1d1f]">{step.title}</p>
+                          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#6b7240]">{t("Step {count}", { count: index + 1 })}</p>
+                          <p className="mt-1 text-base font-semibold leading-tight text-[#1d1d1f]">{t(step.title)}</p>
                         </div>
                       </div>
                     </div>
                   ))}
                   <div className="rounded-[1.8rem] bg-[#17351a] px-5 py-5 text-white">
-                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/45">Before you begin</p>
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/45">{t("Before you begin")}</p>
                     <p className="mt-3 text-sm leading-7 text-white/82">
-                      You only need three things to launch: your business name, the reward you want to offer, and one phone to test the customer card flow.
+                      {t("You only need three things to launch: your business name, the reward you want to offer, and one phone to test the customer card flow.")}
                     </p>
                   </div>
                 </div>
@@ -204,7 +206,7 @@ export const GettingStartedArticlePage: React.FC = () => {
               <div className="space-y-6">
                 {steps.map((step, index) => (
                   <article
-                    key={step.title}
+                    key={t(step.title)}
                     className={`gs-card rounded-[2.4rem] border border-black/[0.06] px-6 py-6 shadow-[0_24px_70px_-42px_rgba(0,0,0,0.24)] sm:px-8 sm:py-8 ${
                       index % 3 === 0
                         ? "bg-white"
@@ -219,24 +221,24 @@ export const GettingStartedArticlePage: React.FC = () => {
                           {index + 1}
                         </div>
                         <div className="min-w-0">
-                          <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#6e6e73]">Step {index + 1}</p>
+                          <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#6e6e73]">{t("Step {count}", { count: index + 1 })}</p>
                           <h2 className="mt-2 text-[clamp(1.6rem,2.4vw,2.4rem)] font-semibold leading-[1.02] tracking-tight text-[#1d1d1f]">
-                            {step.title}
+                            {t(step.title)}
                           </h2>
                           <p className="mt-4 max-w-3xl text-[15px] leading-7 text-[#56595e] sm:text-base">
-                            {step.body}
+                            {t(step.body)}
                           </p>
                         </div>
                       </div>
                       <div className="rounded-full bg-black/[0.04] px-4 py-2 text-sm font-semibold text-[#1d1d1f]">
-                        Action {index + 1} of {steps.length}
+                        {t("Action {count} of {total}", { count: index + 1, total: steps.length })}
                       </div>
                     </div>
                     <ul className="mt-6 grid gap-3 sm:grid-cols-2">
                       {step.bullets.map((bullet) => (
-                        <li key={bullet} className="flex items-start gap-3 rounded-[1.35rem] border border-black/[0.05] bg-white/65 px-4 py-4 text-sm leading-6 text-[#41454a]">
+                        <li key={t(bullet)} className="flex items-start gap-3 rounded-[1.35rem] border border-black/[0.05] bg-white/65 px-4 py-4 text-sm leading-6 text-[#41454a]">
                           <CheckCircle2 className="mt-0.5 h-4.5 w-4.5 shrink-0 text-[#d97706]" />
-                          <span>{bullet}</span>
+                          <span>{t(bullet)}</span>
                         </li>
                       ))}
                     </ul>
@@ -246,32 +248,32 @@ export const GettingStartedArticlePage: React.FC = () => {
 
               <aside className="space-y-5 lg:sticky lg:top-24">
                 <div className="rounded-[2rem] bg-[#1d1d1f] p-6 text-white shadow-[0_28px_70px_-32px_rgba(0,0,0,0.38)]">
-                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/45">Quick checklist</p>
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/45">{t("Quick checklist")}</p>
                   <ul className="mt-5 space-y-3">
                     {checklist.map((item) => (
                       <li key={item} className="flex items-start gap-3 text-sm text-white/88">
                         <CheckCircle2 className="mt-0.5 h-4.5 w-4.5 shrink-0 text-[#d3eb22]" />
-                        <span>{item}</span>
+                        <span>{t(item)}</span>
                       </li>
                     ))}
                   </ul>
                 </div>
 
                 <div className="rounded-[2rem] bg-[#ffe100] p-6 text-[#302900] shadow-[0_24px_60px_-34px_rgba(76,66,0,0.32)]">
-                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#5a4f00]">What success looks like</p>
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#5a4f00]">{t("What success looks like")}</p>
                   <p className="mt-4 text-sm leading-7 text-[#4f4500]">
-                    By the end of setup, you should have one active campaign, one issued test card, and one completed transaction recorded in Stampee.
+                    {t("By the end of setup, you should have one active campaign, one issued test card, and one completed transaction recorded in Stampee.")}
                   </p>
                 </div>
 
                 <div className="rounded-[2rem] border border-black/[0.06] bg-white p-6 shadow-[0_24px_60px_-36px_rgba(0,0,0,0.2)]">
-                  <h3 className="text-xl font-semibold text-[#1d1d1f]">Ready to launch?</h3>
+                  <h3 className="text-xl font-semibold text-[#1d1d1f]">{t("Ready to launch?")}</h3>
                   <p className="mt-3 text-sm leading-7 text-[#5f6368]">
-                    Start with one campaign, validate the workflow on your own phone, then roll it out to customers.
+                    {t("Start with one campaign, validate the workflow on your own phone, then roll it out to customers.")}
                   </p>
                   <Button asChild className="mt-5 w-full rounded-full bg-[#1d1d1f] text-white hover:bg-black/80">
                     <Link to={primaryPath}>
-                      {primaryLabel}
+                      {t(primaryLabel)}
                       <ArrowRight className="ml-2 h-4 w-4" />
                     </Link>
                   </Button>

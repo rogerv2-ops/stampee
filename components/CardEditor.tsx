@@ -12,6 +12,7 @@ import { ArrowLeft, Check as CheckIcon, Smartphone, Image as ImageIcon, Type, Pa
 import { useNavigate } from 'react-router-dom';
 import { ICON_OPTIONS } from '../lib/iconRegistry';
 import { useAuth } from './AuthProvider';
+import { useI18n } from '../lib/i18n';
 import { deleteCampaignAssetByUrl, type CampaignAssetKind, uploadCampaignAsset } from '../lib/storage/campaignAssets';
 
 interface CardEditorProps {
@@ -354,6 +355,7 @@ const BACKGROUND_FILE_ACCEPT = '.jpg,.jpeg,.png,.webp,image/jpeg,image/png,image
 
 export const CardEditor: React.FC<CardEditorProps> = ({ initialTemplate, onSave }) => {
   const navigate = useNavigate();
+  const { t } = useI18n();
   const { activeBusiness } = useAuth();
   const [template, setTemplate] = useState<Template>(initialTemplate);
   const [saveBusy, setSaveBusy] = useState(false);
@@ -370,17 +372,17 @@ export const CardEditor: React.FC<CardEditorProps> = ({ initialTemplate, onSave 
   const [backgroundSelectedFileName, setBackgroundSelectedFileName] = useState('');
   const logoFileInputRef = useRef<HTMLInputElement | null>(null);
   const backgroundFileInputRef = useRef<HTMLInputElement | null>(null);
-  
+
   const [bgHex, setBgHex] = useState(template.colors.background || '#ffffff');
   const [bgIntensity, setBgIntensity] = useState(template.backgroundOpacity ?? 100);
   const [textHex, setTextHex] = useState(template.colors.text || '#000000');
-  
+
   const [stampInactiveBgHex, setStampInactiveBgHex] = useState(template.colors.stampInactive || '#cccccc');
   const [stampInactiveIconHex, setStampInactiveIconHex] = useState(template.colors.iconInactive || '#888888');
 
   const [stampActiveBgHex, setStampActiveBgHex] = useState(template.colors.stampActive || '#000000');
   const [stampActiveIconHex, setStampActiveIconHex] = useState(template.colors.iconActive || '#ffffff');
-  
+
   const handleChange = <K extends keyof Template>(field: K, value: Template[K]) => {
     setTemplate(prev => ({
       ...prev,
@@ -409,18 +411,18 @@ export const CardEditor: React.FC<CardEditorProps> = ({ initialTemplate, onSave 
   };
 
   const updateColors = (
-    type: 'background' | 'text' | 'stampInactiveBg' | 'stampInactiveIcon' | 'stampActiveBg' | 'stampActiveIcon', 
-    hex: string, 
+    type: 'background' | 'text' | 'stampInactiveBg' | 'stampInactiveIcon' | 'stampActiveBg' | 'stampActiveIcon',
+    hex: string,
     intensity?: number
   ) => {
     setTemplate(prev => {
         const newColors = { ...prev.colors };
         let nextOpacity = prev.backgroundOpacity ?? 100;
-        
+
         if (type === 'background') {
             const opacity = intensity !== undefined ? intensity : bgIntensity;
             newColors.background = hex;
-            newColors.cardBackground = hex; 
+            newColors.cardBackground = hex;
             setBgHex(hex);
             nextOpacity = opacity;
             if(intensity !== undefined) setBgIntensity(intensity);
@@ -429,14 +431,14 @@ export const CardEditor: React.FC<CardEditorProps> = ({ initialTemplate, onSave 
             newColors.muted = hex;
             setTextHex(hex);
         } else if (type === 'stampInactiveBg') {
-            newColors.stampInactive = hex; 
+            newColors.stampInactive = hex;
             setStampInactiveBgHex(hex);
         } else if (type === 'stampInactiveIcon') {
             newColors.iconInactive = hex;
             setStampInactiveIconHex(hex);
         } else if (type === 'stampActiveBg') {
-            newColors.stampActive = hex; 
-            newColors.button = hex; 
+            newColors.stampActive = hex;
+            newColors.button = hex;
             setStampActiveBgHex(hex);
         } else if (type === 'stampActiveIcon') {
             newColors.iconActive = hex;
@@ -532,14 +534,14 @@ export const CardEditor: React.FC<CardEditorProps> = ({ initialTemplate, onSave 
     if (!previousUrl) return;
     const result = await deleteCampaignAssetByUrl(previousUrl);
     if (result.managed && !result.deleted) {
-      setUploadNotice(kind, result.error ?? 'Unable to clean up previous image from storage.');
+      setUploadNotice(kind, result.error ?? t('Unable to clean up previous image from storage.'));
     }
   };
 
   const handleAssetUpload = async (kind: CampaignAssetKind, file: File | null) => {
     if (!file) return;
     if (!activeBusiness?.id) {
-      setUploadError(kind, 'You must be signed in as the account owner to upload images.');
+      setUploadError(kind, t('You must be signed in as the account owner to upload images.'));
       return;
     }
 
@@ -566,7 +568,7 @@ export const CardEditor: React.FC<CardEditorProps> = ({ initialTemplate, onSave 
     } catch (error) {
       setUploadError(
         kind,
-        error instanceof Error ? error.message : 'Unable to upload image right now. Please try again.'
+        error instanceof Error ? t(error.message) : t('Unable to upload image right now. Please try again.')
       );
     } finally {
       setUploadBusy(kind, false);
@@ -605,7 +607,7 @@ export const CardEditor: React.FC<CardEditorProps> = ({ initialTemplate, onSave 
       await onSave(template);
       navigate('/campaigns');
     } catch {
-      setSaveError('Unable to save this campaign right now. Please try again.');
+      setSaveError(t('Unable to save this campaign right now. Please try again.'));
     } finally {
       setSaveBusy(false);
     }
@@ -628,7 +630,7 @@ export const CardEditor: React.FC<CardEditorProps> = ({ initialTemplate, onSave 
             />
           </div>
           <p className="mt-3 text-center text-sm font-medium uppercase tracking-widest text-muted-foreground lg:mt-8">
-            Live Preview
+            {t("Live Preview")}
           </p>
         </div>
       </div>
@@ -640,8 +642,8 @@ export const CardEditor: React.FC<CardEditorProps> = ({ initialTemplate, onSave 
                   <ArrowLeft size={20} />
               </Button>
               <div>
-                  <h1 className="text-2xl font-bold tracking-tight">Customize</h1>
-                  <p className="text-sm text-muted-foreground">Design your perfect loyalty card.</p>
+                  <h1 className="text-2xl font-bold tracking-tight">{t('Customize')}</h1>
+                  <p className="text-sm text-muted-foreground">{t('Design your perfect loyalty card.')}</p>
               </div>
             </div>
             <Button
@@ -650,7 +652,7 @@ export const CardEditor: React.FC<CardEditorProps> = ({ initialTemplate, onSave 
               className="lg:hidden shrink-0"
               onClick={() => setIsPreviewOpen(true)}
             >
-              Live Preview
+              {t("Live Preview")}
             </Button>
         </div>
 
@@ -658,23 +660,23 @@ export const CardEditor: React.FC<CardEditorProps> = ({ initialTemplate, onSave 
             <Accordion type="multiple" value={openSections} onValueChange={setOpenSections} className="w-full">
                 <AccordionItem value="general">
                     <AccordionTrigger>
-                        <span className="flex items-center gap-2"><Type size={16}/> General Info</span>
+                        <span className="flex items-center gap-2"><Type size={16}/> {t("General Info")}</span>
                     </AccordionTrigger>
                     <AccordionContent className="space-y-4 pt-2">
                         <div className="space-y-2">
-                            <Label htmlFor="businessName">Name</Label>
-                            <Input 
-                                id="businessName" 
-                                value={template.name} 
-                                onChange={(e) => handleChange('name', e.target.value)} 
-                                placeholder="e.g. Joe's Coffee"
+                            <Label htmlFor="businessName">{t('Name')}</Label>
+                            <Input
+                                id="businessName"
+                                value={template.name}
+                                onChange={(e) => handleChange('name', e.target.value)}
+                                placeholder={t("e.g. Joe's Coffee")}
                             />
                         </div>
-                        
+
                         <div className="space-y-4 pt-2">
                             <div className="flex items-center justify-between">
-                                <Label htmlFor="showLogo" className="text-sm font-medium">Show Main Logo</Label>
-                                <Switch 
+                                <Label htmlFor="showLogo" className="text-sm font-medium">{t('Show Main Logo')}</Label>
+                                <Switch
                                     id="showLogo"
                                     checked={template.showLogo !== false}
                                     onCheckedChange={(checked) => handleChange('showLogo', checked)}
@@ -685,7 +687,7 @@ export const CardEditor: React.FC<CardEditorProps> = ({ initialTemplate, onSave 
                         {template.showLogo !== false && (
                           <div className="space-y-3">
                             <div className="space-y-2">
-                              <Label htmlFor="logoUpload">Upload Brand Logo</Label>
+                              <Label htmlFor="logoUpload">{t('Upload Brand Logo')}</Label>
                               <input
                                 id="logoUpload"
                                 ref={logoFileInputRef}
@@ -707,18 +709,18 @@ export const CardEditor: React.FC<CardEditorProps> = ({ initialTemplate, onSave 
                                 onClick={() => openFilePicker('logo')}
                                 disabled={logoUploadBusy}
                               >
-                                {logoUploadBusy ? 'Uploading logo...' : 'Upload logo from device'}
+                                {logoUploadBusy ? t('Uploading logo...') : t('Upload logo from device')}
                               </Button>
                               {logoSelectedFileName && (
                                 <p className="text-xs text-muted-foreground">
-                                  Selected: {logoSelectedFileName}
+                                  {t('Selected: {name}', { name: logoSelectedFileName })}
                                 </p>
                               )}
                               <p className="text-xs text-muted-foreground">
-                                JPG, PNG, WebP, or SVG up to 2MB.
+                                {t('JPG, PNG, WebP, or SVG up to 2MB.') }
                               </p>
                               {logoUploadBusy && (
-                                <p className="text-xs text-muted-foreground">Uploading logo...</p>
+                                <p className="text-xs text-muted-foreground">{t('Uploading logo...')}</p>
                               )}
                               {logoUploadError && (
                                 <p className="text-xs text-rose-700">{logoUploadError}</p>
@@ -728,7 +730,7 @@ export const CardEditor: React.FC<CardEditorProps> = ({ initialTemplate, onSave 
                               )}
                             </div>
                             <div className="space-y-2">
-                              <Label htmlFor="logoImage">Brand Logo URL</Label>
+                              <Label htmlFor="logoImage">{t('Brand Logo URL')}</Label>
                               <div className="flex gap-2">
                                 <Input
                                   id="logoImage"
@@ -740,40 +742,40 @@ export const CardEditor: React.FC<CardEditorProps> = ({ initialTemplate, onSave 
                                   type="button"
                                   variant="outline"
                                   size="icon"
-                                  title="Clear Logo"
+                                  title={t("Clear Logo")}
                                   onClick={() => void handleClearAsset('logo')}
                                   disabled={logoUploadBusy || !template.logoImage}
                                 >
                                   <X size={14} />
                                 </Button>
                               </div>
-                              <p className="text-xs text-muted-foreground">Replaces the default icon in the header.</p>
+                              <p className="text-xs text-muted-foreground">{t('Replaces the default icon in the header.')}</p>
                             </div>
                           </div>
                         )}
 
                         <div className="space-y-2">
-                            <Label htmlFor="rewardName">Reward Name</Label>
-                            <Input 
-                                id="rewardName" 
-                                value={template.rewardName} 
-                                onChange={(e) => handleChange('rewardName', e.target.value)} 
-                                placeholder="e.g. Free Coffee"
+                            <Label htmlFor="rewardName">{t('Reward Name')}</Label>
+                            <Input
+                                id="rewardName"
+                                value={template.rewardName}
+                                onChange={(e) => handleChange('rewardName', e.target.value)}
+                                placeholder={t("e.g. Free Coffee")}
                             />
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="tagline">Tagline / Instruction</Label>
-                            <Input 
-                                id="tagline" 
-                                value={template.tagline || ''} 
-                                onChange={(e) => handleChange('tagline', e.target.value)} 
-                                placeholder={`Collect ${template.totalStamps} stamps for a...`}
+                            <Label htmlFor="tagline">{t('Tagline / Instruction')}</Label>
+                            <Input
+                                id="tagline"
+                                value={template.tagline || ''}
+                                onChange={(e) => handleChange('tagline', e.target.value)}
+                                placeholder={t('Collect {count} stamps for a...', { count: template.totalStamps })}
                             />
-                            <p className="text-xs text-muted-foreground">Override the default "Collect X stamps..." text.</p>
+                            <p className="text-xs text-muted-foreground">{t('Override the default "Collect X stamps..." text.')}</p>
                         </div>
                         <div className="space-y-3">
                             <div className="flex items-center justify-between gap-3">
-                                <Label htmlFor="totalStamps">Number of Stamps</Label>
+                                <Label htmlFor="totalStamps">{t('Number of Stamps')}</Label>
                                 <span className="inline-flex min-w-12 items-center justify-center rounded-full bg-secondary px-3 py-1 text-sm font-semibold">
                                     {template.totalStamps}
                                 </span>
@@ -798,13 +800,13 @@ export const CardEditor: React.FC<CardEditorProps> = ({ initialTemplate, onSave 
 
                 <AccordionItem value="design">
                     <AccordionTrigger>
-                        <span className="flex items-center gap-2"><Palette size={16}/> Design & Colors</span>
+                        <span className="flex items-center gap-2"><Palette size={16}/> {t("Design & Colors")}</span>
                     </AccordionTrigger>
                     <AccordionContent className="space-y-6 pt-2">
                         <div className="space-y-3">
                             <div className="flex items-center justify-between">
-                                <Label className="text-xs uppercase tracking-wider text-muted-foreground">Preset Palettes</Label>
-                                <span className="text-[10px] text-muted-foreground">Built-in themes</span>
+                                <Label className="text-xs uppercase tracking-wider text-muted-foreground">{t('Preset Palettes')}</Label>
+                                <span className="text-[10px] text-muted-foreground">{t('Built-in themes')}</span>
                             </div>
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
@@ -823,7 +825,7 @@ export const CardEditor: React.FC<CardEditorProps> = ({ initialTemplate, onSave 
                                                 ))}
                                             </div>
                                             <span className="truncate text-sm font-semibold">
-                                                {selectedPalette?.name ?? 'Custom Theme'}
+                                                {selectedPalette?.name ?? t('Custom Theme')}
                                             </span>
                                         </div>
                                         <ChevronDown size={16} className="shrink-0 opacity-70" />
@@ -835,7 +837,7 @@ export const CardEditor: React.FC<CardEditorProps> = ({ initialTemplate, onSave 
                                     className="w-[--radix-dropdown-menu-trigger-width] min-w-[280px] max-h-[18rem] overflow-y-auto rounded-lg border border-[#a8b0c3] bg-[#c8ceda] p-1.5 text-[#434b67] shadow-xl"
                                 >
                                     <p className="px-2 pb-1 pt-0.5 text-xs font-semibold tracking-wide text-[#68718d]">
-                                        Built-in Themes
+                                        {t("Built-in Themes")}
                                     </p>
                                     {PALETTE_PRESETS.map((palette) => {
                                         const selected = isPaletteSelected(palette);
@@ -870,11 +872,11 @@ export const CardEditor: React.FC<CardEditorProps> = ({ initialTemplate, onSave 
                         </div>
 
                         <div className="space-y-3">
-                            <Label className="text-xs uppercase tracking-wider text-muted-foreground">Background</Label>
+                            <Label className="text-xs uppercase tracking-wider text-muted-foreground">{t('Background')}</Label>
                             <div className="flex items-center gap-3">
                                 <div className="h-10 w-10 rounded-full overflow-hidden border shadow-sm shrink-0 relative">
-                                    <input 
-                                        type="color" 
+                                    <input
+                                        type="color"
                                         value={bgHex}
                                         onChange={(e) => updateColors('background', e.target.value)}
                                         className="absolute -top-2 -left-2 w-16 h-16 cursor-pointer"
@@ -882,27 +884,27 @@ export const CardEditor: React.FC<CardEditorProps> = ({ initialTemplate, onSave 
                                 </div>
                                 <div className="flex-1 space-y-1">
                                     <Label className="text-xs">
-                                      {template.backgroundImage ? "Overlay Opacity" : "Color Intensity"} ({bgIntensity}%)
+                                      {template.backgroundImage ? t('Overlay Opacity') : t('Color Intensity')} ({bgIntensity}%)
                                     </Label>
                                     <div className="flex items-center gap-2">
                                         <span className="text-[10px] text-muted-foreground">
-                                          {template.backgroundImage ? "Clear" : "Transparent"}
+                                          {template.backgroundImage ? t('Clear') : t('Transparent')}
                                         </span>
-                                        <input 
-                                            type="range" 
-                                            min="0" 
-                                            max="100" 
-                                            value={bgIntensity} 
+                                        <input
+                                            type="range"
+                                            min="0"
+                                            max="100"
+                                            value={bgIntensity}
                                             onChange={(e) => updateColors('background', bgHex, parseInt(e.target.value))}
                                             className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
                                         />
-                                        <span className="text-[10px] text-muted-foreground">Solid</span>
+                                        <span className="text-[10px] text-muted-foreground">{t('Solid')}</span>
                                     </div>
                                 </div>
                             </div>
-                            
+
                             <div className="space-y-2 mt-2">
-                                <Label htmlFor="backgroundUpload" className="text-xs">Upload Background Image</Label>
+                                <Label htmlFor="backgroundUpload" className="text-xs">{t('Upload Background Image')}</Label>
                                 <input
                                     id="backgroundUpload"
                                     ref={backgroundFileInputRef}
@@ -924,16 +926,16 @@ export const CardEditor: React.FC<CardEditorProps> = ({ initialTemplate, onSave 
                                   onClick={() => openFilePicker('background')}
                                   disabled={backgroundUploadBusy}
                                 >
-                                  {backgroundUploadBusy ? 'Uploading background...' : 'Upload background from device'}
+                                  {backgroundUploadBusy ? t("Uploading background...") : t('Upload background from device')}
                                 </Button>
                                 {backgroundSelectedFileName && (
                                   <p className="text-xs text-muted-foreground">
-                                    Selected: {backgroundSelectedFileName}
+                                    {t('Selected: {name}', { name: backgroundSelectedFileName })}
                                   </p>
                                 )}
-                                <p className="text-xs text-muted-foreground">JPG, PNG, or WebP up to 6MB.</p>
+                                <p className="text-xs text-muted-foreground">{t('JPG, PNG, or WebP up to 6MB.') }</p>
                                 {backgroundUploadBusy && (
-                                  <p className="text-xs text-muted-foreground">Uploading background...</p>
+                                  <p className="text-xs text-muted-foreground">{t("Uploading background...")}</p>
                                 )}
                                 {backgroundUploadError && (
                                   <p className="text-xs text-rose-700">{backgroundUploadError}</p>
@@ -944,12 +946,12 @@ export const CardEditor: React.FC<CardEditorProps> = ({ initialTemplate, onSave 
                             </div>
 
                             <div className="space-y-1">
-                                <Label htmlFor="bgImage" className="text-xs">Background Image URL</Label>
+                                <Label htmlFor="bgImage" className="text-xs">{t("Background Image URL")}</Label>
                                 <div className="flex gap-2">
-                                    <Input 
-                                        id="bgImage" 
-                                        value={template.backgroundImage || ''} 
-                                        onChange={(e) => handleChange('backgroundImage', e.target.value)} 
+                                    <Input
+                                        id="bgImage"
+                                        value={template.backgroundImage || ''}
+                                        onChange={(e) => handleChange('backgroundImage', e.target.value)}
                                         placeholder="https://..."
                                         className="text-xs"
                                     />
@@ -958,7 +960,7 @@ export const CardEditor: React.FC<CardEditorProps> = ({ initialTemplate, onSave 
                                       variant="outline"
                                       size="icon"
                                       onClick={() => void handleClearAsset('background')}
-                                      title="Clear Image"
+                                      title={t("Clear Image")}
                                       disabled={backgroundUploadBusy || !template.backgroundImage}
                                     >
                                         <ImageIcon size={14} />
@@ -969,14 +971,14 @@ export const CardEditor: React.FC<CardEditorProps> = ({ initialTemplate, onSave 
 
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-3">
-                                <Label className="text-xs uppercase tracking-wider text-muted-foreground font-bold">Empty Slot</Label>
-                                
+                                <Label className="text-xs uppercase tracking-wider text-muted-foreground font-bold">{t('Empty Slot')}</Label>
+
                                 <div className="space-y-1">
-                                    <p className="text-[10px] text-muted-foreground">Background</p>
+                                    <p className="text-[10px] text-muted-foreground">{t('Background')}</p>
                                     <div className="flex items-center gap-2">
                                         <div className="h-8 w-8 rounded-md overflow-hidden border shadow-sm shrink-0 relative">
-                                            <input 
-                                                type="color" 
+                                            <input
+                                                type="color"
                                                 value={stampInactiveBgHex}
                                                 onChange={(e) => updateColors('stampInactiveBg', e.target.value)}
                                                 className="absolute -top-2 -left-2 w-16 h-16 cursor-pointer"
@@ -987,11 +989,11 @@ export const CardEditor: React.FC<CardEditorProps> = ({ initialTemplate, onSave 
                                 </div>
 
                                 <div className="space-y-1">
-                                    <p className="text-[10px] text-muted-foreground">Icon Color</p>
+                                    <p className="text-[10px] text-muted-foreground">{t('Icon Color')}</p>
                                     <div className="flex items-center gap-2">
                                         <div className="h-8 w-8 rounded-md overflow-hidden border shadow-sm shrink-0 relative">
-                                            <input 
-                                                type="color" 
+                                            <input
+                                                type="color"
                                                 value={stampInactiveIconHex}
                                                 onChange={(e) => updateColors('stampInactiveIcon', e.target.value)}
                                                 className="absolute -top-2 -left-2 w-16 h-16 cursor-pointer"
@@ -1003,14 +1005,14 @@ export const CardEditor: React.FC<CardEditorProps> = ({ initialTemplate, onSave 
                             </div>
 
                             <div className="space-y-3">
-                                <Label className="text-xs uppercase tracking-wider text-muted-foreground font-bold">Filled Slot</Label>
-                                
+                                <Label className="text-xs uppercase tracking-wider text-muted-foreground font-bold">{t('Filled Slot')}</Label>
+
                                 <div className="space-y-1">
-                                    <p className="text-[10px] text-muted-foreground">Background</p>
+                                    <p className="text-[10px] text-muted-foreground">{t('Background')}</p>
                                     <div className="flex items-center gap-2">
                                         <div className="h-8 w-8 rounded-md overflow-hidden border shadow-sm shrink-0 relative">
-                                            <input 
-                                                type="color" 
+                                            <input
+                                                type="color"
                                                 value={stampActiveBgHex}
                                                 onChange={(e) => updateColors('stampActiveBg', e.target.value)}
                                                 className="absolute -top-2 -left-2 w-16 h-16 cursor-pointer"
@@ -1021,11 +1023,11 @@ export const CardEditor: React.FC<CardEditorProps> = ({ initialTemplate, onSave 
                                 </div>
 
                                 <div className="space-y-1">
-                                    <p className="text-[10px] text-muted-foreground">Icon Color</p>
+                                    <p className="text-[10px] text-muted-foreground">{t('Icon Color')}</p>
                                     <div className="flex items-center gap-2">
                                         <div className="h-8 w-8 rounded-md overflow-hidden border shadow-sm shrink-0 relative">
-                                            <input 
-                                                type="color" 
+                                            <input
+                                                type="color"
                                                 value={stampActiveIconHex}
                                                 onChange={(e) => updateColors('stampActiveIcon', e.target.value)}
                                                 className="absolute -top-2 -left-2 w-16 h-16 cursor-pointer"
@@ -1038,11 +1040,11 @@ export const CardEditor: React.FC<CardEditorProps> = ({ initialTemplate, onSave 
                         </div>
 
                         <div className="space-y-2 pt-2 border-t">
-                            <Label className="text-xs uppercase tracking-wider text-muted-foreground">Main Text Color</Label>
+                            <Label className="text-xs uppercase tracking-wider text-muted-foreground">{t('Main Text Color')}</Label>
                             <div className="flex items-center gap-2">
                                 <div className="h-10 w-10 rounded-md overflow-hidden border shadow-sm shrink-0 relative">
-                                    <input 
-                                        type="color" 
+                                    <input
+                                        type="color"
                                         value={textHex}
                                         onChange={(e) => updateColors('text', e.target.value)}
                                         className="absolute -top-2 -left-2 w-16 h-16 cursor-pointer"
@@ -1057,7 +1059,7 @@ export const CardEditor: React.FC<CardEditorProps> = ({ initialTemplate, onSave 
 
                 <AccordionItem value="icons">
                     <AccordionTrigger>
-                        <span className="flex items-center gap-2"><Grid size={16}/> Icon</span>
+                        <span className="flex items-center gap-2"><Grid size={16}/> {t("Icon")}</span>
                     </AccordionTrigger>
                     <AccordionContent className="pt-2">
                         <div className="grid grid-cols-4 gap-2">
@@ -1069,8 +1071,8 @@ export const CardEditor: React.FC<CardEditorProps> = ({ initialTemplate, onSave 
                                         onClick={() => handleChange('icon', item.icon)}
                                         className={`
                                             flex flex-col items-center justify-center gap-1 p-3 rounded-lg border transition-all
-                                            ${IsSelected 
-                                                ? 'bg-primary text-primary-foreground border-primary ring-2 ring-primary ring-offset-2' 
+                                            ${IsSelected
+                                                ? 'bg-primary text-primary-foreground border-primary ring-2 ring-primary ring-offset-2'
                                                 : 'hover:bg-secondary hover:border-secondary-foreground/20 bg-white'
                                             }
                                         `}
@@ -1086,7 +1088,7 @@ export const CardEditor: React.FC<CardEditorProps> = ({ initialTemplate, onSave 
 
                 <AccordionItem value="social">
                     <AccordionTrigger>
-                        <span className="flex items-center gap-2"><Smartphone size={16}/> Social</span>
+                        <span className="flex items-center gap-2"><Smartphone size={16}/> {t("Social")}</span>
                     </AccordionTrigger>
                     <AccordionContent className="space-y-4 pt-2">
                         <div className="space-y-2">
@@ -1095,7 +1097,7 @@ export const CardEditor: React.FC<CardEditorProps> = ({ initialTemplate, onSave 
                                 id="social-instagram"
                                 value={template.social?.instagram || ''}
                                 onChange={(e) => handleSocialChange('instagram', e.target.value)}
-                                placeholder="@yourbrand or https://instagram.com/yourbrand"
+                                placeholder={t("@yourbrand or https://instagram.com/yourbrand")}
                             />
                         </div>
                         <div className="space-y-2">
@@ -1104,16 +1106,16 @@ export const CardEditor: React.FC<CardEditorProps> = ({ initialTemplate, onSave 
                                 id="social-facebook"
                                 value={template.social?.facebook || ''}
                                 onChange={(e) => handleSocialChange('facebook', e.target.value)}
-                                placeholder="yourbrand or https://facebook.com/yourbrand"
+                                placeholder={t("yourbrand or https://facebook.com/yourbrand")}
                             />
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="social-tiktok">TikTok</Label>
+                            <Label htmlFor="social-tiktok">{t("TikTok")}</Label>
                             <Input
                                 id="social-tiktok"
                                 value={template.social?.tiktok || ''}
                                 onChange={(e) => handleSocialChange('tiktok', e.target.value)}
-                                placeholder="@yourbrand or https://tiktok.com/@yourbrand"
+                                placeholder={t("@yourbrand or https://tiktok.com/@yourbrand")}
                             />
                         </div>
                         <div className="space-y-2">
@@ -1122,20 +1124,20 @@ export const CardEditor: React.FC<CardEditorProps> = ({ initialTemplate, onSave 
                                 id="social-x"
                                 value={template.social?.x || ''}
                                 onChange={(e) => handleSocialChange('x', e.target.value)}
-                                placeholder="@yourbrand or https://x.com/yourbrand"
+                                placeholder={t("@yourbrand or https://x.com/yourbrand")}
                             />
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="social-youtube">YouTube</Label>
+                            <Label htmlFor="social-youtube">{t("YouTube")}</Label>
                             <Input
                                 id="social-youtube"
                                 value={template.social?.youtube || ''}
                                 onChange={(e) => handleSocialChange('youtube', e.target.value)}
-                                placeholder="@yourbrand or https://youtube.com/@yourbrand"
+                                placeholder={t("@yourbrand or https://youtube.com/@yourbrand")}
                             />
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="social-website">Website</Label>
+                            <Label htmlFor="social-website">{t("Website")}</Label>
                             <Input
                                 id="social-website"
                                 value={template.social?.website || ''}
@@ -1160,7 +1162,7 @@ export const CardEditor: React.FC<CardEditorProps> = ({ initialTemplate, onSave 
               onClick={handleSave}
               disabled={saveBusy || logoUploadBusy || backgroundUploadBusy}
             >
-                {saveBusy ? 'Saving...' : 'Save'} <CheckIcon size={20} />
+                {saveBusy ? t('Saving...') : t('Save')} <CheckIcon size={20} />
             </Button>
         </div>
       </div>
@@ -1173,7 +1175,7 @@ export const CardEditor: React.FC<CardEditorProps> = ({ initialTemplate, onSave 
             [&>button]:bg-black/55 [&>button]:p-1 [&>button]:text-white [&>button]:opacity-100
           "
         >
-          <DialogTitle className="sr-only">Live card preview</DialogTitle>
+          <DialogTitle className="sr-only">{t('Live card preview')}</DialogTitle>
           <div className="mx-auto flex h-full w-full max-w-[430px] items-center justify-center py-6">
             <div className="h-full min-h-[360px] max-h-[86dvh] w-full overflow-hidden rounded-3xl bg-white ring-1 ring-black/5 shadow-lg">
               <LoyaltyCard

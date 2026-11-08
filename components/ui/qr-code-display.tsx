@@ -1,5 +1,6 @@
 import QRCode from 'react-qr-code';
 import { cn } from '../../lib/utils';
+import { useI18n } from '../../lib/i18n';
 
 interface QrCodeDisplayProps {
   value: string;
@@ -8,8 +9,9 @@ interface QrCodeDisplayProps {
 }
 
 export function QrCodeDisplay({ value, className, label = 'QR code' }: QrCodeDisplayProps) {
+  const { t } = useI18n();
   return (
-    <div aria-label={label} className={cn("inline-flex aspect-square", className)} role="img">
+    <div aria-label={t(label)} className={cn("inline-flex aspect-square", className)} role="img">
       <QRCode
         value={value}
         bgColor="#FFFFFF"

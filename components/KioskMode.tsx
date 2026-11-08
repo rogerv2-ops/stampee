@@ -7,6 +7,7 @@ import { Label } from './ui/label';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "./ui/dialog";
 import { Plus, Gift, History, User, ChevronLeft, Minus, Lock, CheckCircle, RefreshCcw, ShieldCheck, Clock3 } from 'lucide-react';
 import { cn } from '../lib/utils';
+import { useI18n } from '../lib/i18n';
 
 interface KioskModeProps {
   customer: Customer;
@@ -37,13 +38,13 @@ const createTransaction = (
         id: `tx-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         type,
         amount,
-        date: now.toLocaleString(undefined, { 
-            month: 'short', 
-            day: 'numeric', 
-            year: 'numeric', 
-            hour: 'numeric', 
-            minute: '2-digit', 
-            hour12: true 
+        date: now.toLocaleString(undefined, {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true
         }),
         timestamp: now.getTime(),
         title,
@@ -54,21 +55,21 @@ const createTransaction = (
     };
 };
 
-const formatKioskAction = (type: Transaction['type']) => {
+const formatKioskAction = (type: Transaction['type'], t: (s: string, v?: Record<string, string | number>) => string) => {
     switch (type) {
         case 'issued':
-            return 'Card issued';
+            return t('Card issued');
         case 'redeem':
-            return 'Reward redeemed';
+            return t('Reward redeemed');
         case 'stamp_remove':
-            return 'Stamp removed';
+            return t('Stamp removed');
         default:
-            return 'Stamp added';
+            return t('Stamp added');
     }
 };
 
-const formatKioskTimestamp = (timestamp: number) =>
-    new Date(timestamp).toLocaleString(undefined, {
+const formatKioskTimestamp = (timestamp: number, locale: string) =>
+    new Date(timestamp).toLocaleString(locale, {
         month: 'short',
         day: 'numeric',
         hour: 'numeric',
@@ -89,9 +90,10 @@ export const KioskMode: React.FC<KioskModeProps> = ({
   actorRole,
   mutationBusy = false
 }) => {
+  const { t, locale } = useI18n();
   const [isAnimating, setIsAnimating] = useState(false);
   const [actionError, setActionError] = useState("");
-  
+
   // Confirmation States
   const [confirmAction, setConfirmAction] = useState<'stamp' | 'remove' | 'redeem' | null>(null);
   const [redemptionRemarks, setRedemptionRemarks] = useState("");
@@ -103,14 +105,14 @@ export const KioskMode: React.FC<KioskModeProps> = ({
   const remainingStamps = Math.max(template.totalStamps - card.stamps, 0);
   const recentHistory = [...card.history]
     .sort((a, b) => b.timestamp - a.timestamp);
-  const customerMeta = customer.mobile || customer.email || 'No contact details';
-  const operatorLabel = actorRole === 'staff' ? 'Staff session' : 'Owner session';
+  const customerMeta = customer.mobile || customer.email || t('No contact details');
+  const operatorLabel = actorRole === 'staff' ? t('Staff session') : t('Owner session');
   const confirmCopy = (() => {
       switch (confirmAction) {
           case 'stamp':
               return {
                   title: 'Confirm Stamp',
-                  description: `Add 1 stamp to ${customer.name}'s card?`,
+                  description: t("Add 1 stamp to {name}'s card?", { name: customer.name }),
                   buttonLabel: 'Add Stamp',
                   icon: Plus,
                   accentClassName: 'bg-[#eef5e8] text-[#4c7a2b]',
@@ -119,7 +121,7 @@ export const KioskMode: React.FC<KioskModeProps> = ({
           case 'remove':
               return {
                   title: 'Remove Stamp',
-                  description: `Remove 1 stamp from ${customer.name}'s card?`,
+                  description: t("Remove 1 stamp from {name}'s card?", { name: customer.name }),
                   buttonLabel: 'Remove Stamp',
                   icon: Minus,
                   accentClassName: 'bg-rose-100 text-rose-600',
@@ -128,7 +130,7 @@ export const KioskMode: React.FC<KioskModeProps> = ({
           case 'redeem':
               return {
                   title: 'Confirm Redemption',
-                  description: `Complete ${customer.name}'s card and mark the reward as claimed.`,
+                  description: t("Complete {name}'s card and mark the reward as claimed.", { name: customer.name }),
                   buttonLabel: 'Confirm & Redeem',
                   icon: Gift,
                   accentClassName: 'bg-[#fff2de] text-[#cf6d1b]',
@@ -226,7 +228,7 @@ export const KioskMode: React.FC<KioskModeProps> = ({
             className="rounded-full border-black/10 bg-white/80 px-4 backdrop-blur hover:bg-white"
           >
             <ChevronLeft size={18} className="mr-2" />
-            Back
+            {t("Back")}
           </Button>
         </div>
 
@@ -234,11 +236,11 @@ export const KioskMode: React.FC<KioskModeProps> = ({
           <div className="relative mx-auto w-full max-w-[26rem] sm:max-w-[28rem] md:mt-4 md:max-w-[380px]">
             <div className="absolute inset-x-8 bottom-[-1.25rem] h-16 rounded-full bg-black/10 blur-2xl" />
             <div className="relative aspect-[340/600] overflow-hidden rounded-[2.6rem] bg-white shadow-[0_32px_80px_-36px_rgba(0,0,0,0.42)] ring-1 ring-black/5 md:aspect-[420/780]">
-                <LoyaltyCard 
+                <LoyaltyCard
                     template={template}
                     mode="active"
                     currentStamps={card.stamps}
-                    readOnly={true} 
+                    readOnly={true}
                     onStampAddTap={handlePreviewStampAddTap}
                     onStampRemoveTap={handlePreviewStampRemoveTap}
                     className={cn("w-full h-full transition-opacity", isLocked && "opacity-50 grayscale-[0.5]")}
@@ -246,7 +248,7 @@ export const KioskMode: React.FC<KioskModeProps> = ({
                     isRedeemed={isLocked}
                     sizeVariant="compact"
                 />
-                
+
                 {/* Stamp Animation Overlay */}
                 {isAnimating && (
                     <div className="absolute inset-0 flex items-center justify-center z-50 pointer-events-none">
@@ -263,15 +265,15 @@ export const KioskMode: React.FC<KioskModeProps> = ({
                             <div className="mb-3 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
                                 <CheckCircle size={32} />
                             </div>
-                            <h3 className="text-xl font-bold text-[#1d1d1f]">Reward claimed</h3>
-                            <p className="mt-1 text-sm text-[#5f6368]">This card is closed.</p>
+                            <h3 className="text-xl font-bold text-[#1d1d1f]">{t("Reward claimed") }</h3>
+                            <p className="mt-1 text-sm text-[#5f6368]">{t("This card is closed.") }</p>
                         </div>
                     </div>
                 )}
             </div>
             {!isLocked && (
               <p className="mt-3 text-center text-xs font-medium tracking-wide text-[#5f6368] sm:text-sm">
-                Tap the next empty stamp to add. Tap a filled stamp to remove.
+                {t("Tap the next empty stamp to add. Tap a filled stamp to remove.")}
               </p>
             )}
           </div>
@@ -285,7 +287,7 @@ export const KioskMode: React.FC<KioskModeProps> = ({
         <div className="md:flex-1 md:overflow-y-auto">
         <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 p-4 sm:p-6 md:gap-6 md:p-8">
             <div className="rounded-[20px] border border-black/5 bg-white/85 px-4 py-3 shadow-[0_18px_45px_-34px_rgba(0,0,0,0.3)] backdrop-blur">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#6b705c]">Card ID</p>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#6b705c]">{t("Card ID") }</p>
                 <p className="mt-1 break-all font-mono text-sm text-[#1d1d1f]">{card.uniqueId}</p>
             </div>
 
@@ -293,7 +295,7 @@ export const KioskMode: React.FC<KioskModeProps> = ({
                 <div className="rounded-[24px] border border-black/5 bg-white p-5 shadow-[0_18px_45px_-34px_rgba(0,0,0,0.3)]">
                     <div className="flex items-start justify-between gap-3">
                         <div>
-                            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#6b705c]">Customer</p>
+                            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#6b705c]">{t("Customer") }</p>
                             <p className="mt-3 text-lg font-semibold text-[#1d1d1f]">{customer.name}</p>
                             <p className="mt-1 break-all text-sm text-[#5f6368]">{customerMeta}</p>
                         </div>
@@ -306,8 +308,8 @@ export const KioskMode: React.FC<KioskModeProps> = ({
                 <div className="rounded-[24px] border border-black/5 bg-white p-5 shadow-[0_18px_45px_-34px_rgba(0,0,0,0.3)]">
                     <div className="flex items-start justify-between gap-3">
                         <div>
-                            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#6b705c]">Reward status</p>
-                            <p className="mt-3 text-lg font-semibold text-[#1d1d1f]">{isLocked ? 'Completed' : canRedeem ? 'Claim now' : `${remainingStamps} remaining`}</p>
+                            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#6b705c]">{t("Reward status") }</p>
+                            <p className="mt-3 text-lg font-semibold text-[#1d1d1f]">{isLocked ? t("Completed") : canRedeem ? t("Claim now") : t("{count} remaining", { count: remainingStamps })}</p>
                             <p className="mt-1 text-sm text-[#5f6368]">{template.rewardName}</p>
                         </div>
                         <div className={cn(
@@ -322,7 +324,7 @@ export const KioskMode: React.FC<KioskModeProps> = ({
                 <div className="rounded-[24px] border border-black/5 bg-white p-5 shadow-[0_18px_45px_-34px_rgba(0,0,0,0.3)]">
                     <div className="flex items-start justify-between gap-3">
                         <div>
-                            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#6b705c]">Session</p>
+                            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#6b705c]">{t("Session") }</p>
                             <p className="mt-3 text-lg font-semibold text-[#1d1d1f]">{operatorLabel}</p>
                             <p className="mt-1 text-sm text-[#5f6368]">{actorName}</p>
                         </div>
@@ -338,23 +340,23 @@ export const KioskMode: React.FC<KioskModeProps> = ({
                     {actionError}
                 </div>
             )}
-            
+
             {isLocked ? (
                 // LOCKED STATE ACTIONS
                 <div className="rounded-[30px] border border-black/5 bg-white p-6 shadow-[0_28px_60px_-40px_rgba(0,0,0,0.32)]">
                     <div className="flex h-full flex-col items-center justify-center gap-6 py-2 text-center">
                         <div className="space-y-2">
                         <Lock size={48} className="mx-auto text-gray-300" />
-                        <h2 className="text-xl font-bold text-[#1d1d1f] sm:text-2xl">Reward Redeemed</h2>
+                        <h2 className="text-xl font-bold text-[#1d1d1f] sm:text-2xl">{t("Reward Redeemed") }</h2>
                         <p className="mx-auto max-w-md text-sm text-[#5f6368] sm:text-base">
-                            This card has been completed and redeemed on {card.completedDate || 'today'}. To continue collecting stamps, issue a new card.
+                            {t("This card has been completed and redeemed on {date}. To continue collecting stamps, issue a new card.", { date: card.completedDate || t("today") })}
                         </p>
                         </div>
                     <Button size="lg" onClick={handleIssueNext} className="h-12 w-full gap-2 rounded-full bg-[#1d1d1f] px-6 text-base text-white shadow-lg hover:bg-black sm:h-14 sm:w-auto sm:px-8 sm:text-lg" disabled={!canIssue}>
-                        <RefreshCcw size={20} /> Issue New Card
+                        <RefreshCcw size={20} /> {t("Issue New Card")}
                     </Button>
                     {!canIssue && (
-                        <div className="text-xs text-amber-700">Verify your email to issue cards.</div>
+                        <div className="text-xs text-amber-700">{t("Verify your email to issue cards.")}</div>
                     )}
                 </div>
                 </div>
@@ -363,11 +365,11 @@ export const KioskMode: React.FC<KioskModeProps> = ({
                 <div className="rounded-[30px] border border-black/5 bg-white p-4 shadow-[0_28px_60px_-40px_rgba(0,0,0,0.32)] sm:p-6">
                 <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
                     <div>
-                        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#6b705c]">Actions</p>
-                        <h2 className="mt-2 text-2xl font-bold tracking-tight text-[#1d1d1f]">Fast counter controls</h2>
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#6b705c]">{t("Actions") }</p>
+                        <h2 className="mt-2 text-2xl font-bold tracking-tight text-[#1d1d1f]">{t("Fast counter controls") }</h2>
                     </div>
                     <p className="max-w-md text-sm text-[#5f6368]">
-                        Prioritize the add-stamp flow. Redeem stays highlighted only when the reward is actually unlocked.
+                        {t("Prioritize the add-stamp flow. Redeem stays highlighted only when the reward is actually unlocked.")}
                     </p>
                 </div>
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6">
@@ -377,8 +379,8 @@ export const KioskMode: React.FC<KioskModeProps> = ({
                         disabled={mutationBusy || !canAdd}
                         className={cn(
                             "group relative overflow-hidden rounded-[30px] border p-6 text-left transition-all duration-200",
-                            !canAdd 
-                                ? "cursor-not-allowed border-black/5 bg-[#f3f2ec] opacity-55" 
+                            !canAdd
+                                ? "cursor-not-allowed border-black/5 bg-[#f3f2ec] opacity-55"
                                 : "border-black/5 bg-[linear-gradient(145deg,#1d1d1f_0%,#303033_100%)] text-white shadow-[0_28px_65px_-34px_rgba(0,0,0,0.55)] hover:-translate-y-0.5"
                         )}
                     >
@@ -395,15 +397,15 @@ export const KioskMode: React.FC<KioskModeProps> = ({
                               "rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em]",
                               !canAdd ? "bg-white text-[#6e6e73]" : "bg-white/15 text-white"
                             )}>
-                              Primary
+                              {t("Primary")}
                             </span>
                           </div>
                           <div>
-                            <span className={cn("block text-2xl font-bold tracking-tight", !canAdd && "text-[#4c4c52]")}>Add Stamp</span>
-                            <span className={cn("mt-2 block text-sm leading-6", !canAdd ? "text-[#6e6e73]" : "text-white/78")}>Record a completed visit instantly and keep the customer moving through the queue.</span>
+                            <span className={cn("block text-2xl font-bold tracking-tight", !canAdd && "text-[#4c4c52]")}>{t("Add Stamp") }</span>
+                            <span className={cn("mt-2 block text-sm leading-6", !canAdd ? "text-[#6e6e73]" : "text-white/78")}>{t("Record a completed visit instantly and keep the customer moving through the queue.") }</span>
                           </div>
                           <div className={cn("text-sm font-medium", !canAdd ? "text-[#6e6e73]" : "text-white/84")}>
-                            {canAdd ? `${remainingStamps} more until reward` : 'Card already reached max stamps'}
+                            {canAdd ? t('{count} more until reward', { count: remainingStamps }) : t("Card already reached max stamps")}
                           </div>
                         </div>
                     </button>
@@ -415,8 +417,8 @@ export const KioskMode: React.FC<KioskModeProps> = ({
                             disabled={mutationBusy || !canRedeem}
                             className={cn(
                                 "group relative overflow-hidden rounded-[30px] border p-6 text-left transition-all duration-200",
-                                !canRedeem 
-                                    ? "cursor-not-allowed border-black/5 bg-[#f8f7f2] opacity-60" 
+                                !canRedeem
+                                    ? "cursor-not-allowed border-black/5 bg-[#f8f7f2] opacity-60"
                                     : "border-[#f0c48e] bg-[linear-gradient(145deg,#fff6e8_0%,#ffe8c5_100%)] shadow-[0_28px_60px_-38px_rgba(207,109,27,0.45)] hover:-translate-y-0.5"
                             )}
                         >
@@ -433,15 +435,15 @@ export const KioskMode: React.FC<KioskModeProps> = ({
                                   "rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em]",
                                   canRedeem ? "bg-white/70 text-[#8a4a11]" : "bg-white text-[#8c8c91]"
                                 )}>
-                                  {canRedeem ? 'Unlocked' : 'Standby'}
+                                  {canRedeem ? t("Unlocked") : t("Standby")}
                                 </span>
                               </div>
                               <div>
-                                <span className={cn("block text-2xl font-bold tracking-tight", canRedeem ? "text-[#8a4a11]" : "text-[#4c4c52]")}>Redeem Reward</span>
-                                <span className="mt-2 block text-sm leading-6 text-[#6b5b49]">Close the card and confirm the reward once the customer has completed all required stamps.</span>
+                                <span className={cn("block text-2xl font-bold tracking-tight", canRedeem ? "text-[#8a4a11]" : "text-[#4c4c52]")}>{t("Redeem Reward") }</span>
+                                <span className="mt-2 block text-sm leading-6 text-[#6b5b49]">{t("Close the card and confirm the reward once the customer has completed all required stamps.") }</span>
                               </div>
                               <div className={cn("text-sm font-medium", canRedeem ? "text-[#8a4a11]" : "text-[#6e6e73]")}>
-                                {canRedeem ? template.rewardName : `Need ${remainingStamps} more stamp${remainingStamps === 1 ? '' : 's'}`}
+                                {canRedeem ? template.rewardName : t(remainingStamps === 1 ? 'Need {count} more stamp' : 'Need {count} more stamps', { count: remainingStamps })}
                               </div>
                             </div>
                         </button>
@@ -452,10 +454,10 @@ export const KioskMode: React.FC<KioskModeProps> = ({
                                   <Lock size={26} />
                               </div>
                               <div>
-                                  <span className="block text-2xl font-bold tracking-tight text-[#4c4c52]">Redeem locked</span>
-                                  <span className="mt-2 block text-sm leading-6 text-[#6e6e73]">Reward redemption is limited for this session. An owner can complete the reward flow.</span>
+                                  <span className="block text-2xl font-bold tracking-tight text-[#4c4c52]">{t("Redeem locked") }</span>
+                                  <span className="mt-2 block text-sm leading-6 text-[#6e6e73]">{t("Reward redemption is limited for this session. An owner can complete the reward flow.") }</span>
                               </div>
-                              <div className="text-sm font-medium text-[#6e6e73]">Owner approval required</div>
+                              <div className="text-sm font-medium text-[#6e6e73]">{t("Owner approval required") }</div>
                             </div>
                         </div>
                     )}
@@ -467,7 +469,7 @@ export const KioskMode: React.FC<KioskModeProps> = ({
             {!isLocked && (
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                      {/* Remove Stamp Button */}
-                     <button 
+                     <button
                         onClick={() => setConfirmAction('remove')}
                         disabled={mutationBusy || !canRemove}
                         className={cn(
@@ -479,9 +481,9 @@ export const KioskMode: React.FC<KioskModeProps> = ({
                     >
                         <div className="flex items-start justify-between gap-3">
                           <div>
-                            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#6b705c]">Correction</p>
-                            <p className={cn("mt-2 text-lg font-semibold", canRemove ? "text-[#7a1f1f]" : "text-[#6e6e73]")}>Remove Stamp</p>
-                            <p className="mt-2 text-sm text-[#5f6368]">Use when a visit was added by mistake and the balance needs manual correction.</p>
+                            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#6b705c]">{t("Correction") }</p>
+                            <p className={cn("mt-2 text-lg font-semibold", canRemove ? "text-[#7a1f1f]" : "text-[#6e6e73]")}>{t("Remove Stamp") }</p>
+                            <p className="mt-2 text-sm text-[#5f6368]">{t("Use when a visit was added by mistake and the balance needs manual correction.") }</p>
                           </div>
                           <div className={cn(
                             "flex h-11 w-11 items-center justify-center rounded-2xl",
@@ -491,12 +493,12 @@ export const KioskMode: React.FC<KioskModeProps> = ({
                           </div>
                         </div>
                     </button>
-                    
+
                     <div className="rounded-[24px] border border-black/5 bg-[#f8f7f2] p-5">
                         <div className="flex items-start justify-between gap-3">
                           <div>
-                            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#6b705c]">Today</p>
-                            <p className="mt-2 text-lg font-semibold text-[#1d1d1f]">Last visit</p>
+                            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#6b705c]">{t("Today") }</p>
+                            <p className="mt-2 text-lg font-semibold text-[#1d1d1f]">{t("Last visit") }</p>
                             <p className="mt-2 text-sm text-[#5f6368]">{card.lastVisit || 'Today'}</p>
                           </div>
                           <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-[#5f6368]">
@@ -510,8 +512,8 @@ export const KioskMode: React.FC<KioskModeProps> = ({
             <div className="rounded-[30px] border border-black/5 bg-white p-5 shadow-[0_28px_60px_-40px_rgba(0,0,0,0.32)] sm:p-6">
                 <div className="flex items-start justify-between gap-3">
                     <div>
-                        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#6b705c]">Recent activity</p>
-                        <h2 className="mt-2 text-xl font-bold tracking-tight text-[#1d1d1f]">Card timeline</h2>
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#6b705c]">{t("Recent activity") }</p>
+                        <h2 className="mt-2 text-xl font-bold tracking-tight text-[#1d1d1f]">{t("Card timeline") }</h2>
                     </div>
                     <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#f5f4ef] text-[#1d1d1f]">
                         <History size={18} />
@@ -520,7 +522,7 @@ export const KioskMode: React.FC<KioskModeProps> = ({
 
                 {recentHistory.length === 0 ? (
                     <div className="mt-6 rounded-[24px] border border-dashed border-black/10 bg-[#f8f7f2] px-4 py-10 text-center text-sm text-[#5f6368]">
-                        No activity recorded yet.
+                        {t("No activity recorded yet.")}
                     </div>
                 ) : (
                     <div className="mt-6 space-y-3">
@@ -542,9 +544,9 @@ export const KioskMode: React.FC<KioskModeProps> = ({
                                     </div>
                                     <div className="min-w-0 flex-1">
                                         <div className="flex flex-wrap items-center gap-2">
-                                            <p className="font-semibold text-[#1d1d1f]">{formatKioskAction(entry.type)}</p>
+                                            <p className="font-semibold text-[#1d1d1f]">{formatKioskAction(entry.type, t)}</p>
                                             <span className="rounded-full bg-white px-2 py-0.5 text-[11px] font-medium text-[#6e6e73] ring-1 ring-black/5">
-                                                {formatKioskTimestamp(entry.timestamp)}
+                                                {formatKioskTimestamp(entry.timestamp, locale)}
                                             </span>
                                         </div>
                                         <p className="mt-1 text-sm text-[#5f6368]">
@@ -590,26 +592,26 @@ export const KioskMode: React.FC<KioskModeProps> = ({
                     <div className="rounded-[24px] border border-black/5 bg-white/80 p-4">
                         <div className="flex items-center justify-between gap-3">
                             <div>
-                                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#6b705c]">Customer</p>
+                                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#6b705c]">{t("Customer") }</p>
                                 <p className="mt-1 text-base font-semibold text-[#1d1d1f]">{customer.name}</p>
                             </div>
-                            <p className="text-sm text-[#5f6368]">{card.stamps}/{template.totalStamps} stamps</p>
+                            <p className="text-sm text-[#5f6368]">{card.stamps}/{template.totalStamps} {t("stamps")}</p>
                         </div>
                         <p className="mt-3 text-sm text-[#5f6368]">
-                            Reward: <span className="font-medium text-[#1d1d1f]">{template.rewardName}</span>
+                            {t("Reward:")} <span className="font-medium text-[#1d1d1f]">{template.rewardName}</span>
                         </p>
                     </div>
 
                     {confirmAction === 'redeem' && (
                         <div className="space-y-3">
                             <div className="rounded-[20px] border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-                                This will complete the card and lock it permanently. A new card will be needed for future visits.
+                                {t("This will complete the card and lock it permanently. A new card will be needed for future visits.")}
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="remarks">Redemption Remarks (Optional)</Label>
-                                <Input 
-                                    id="remarks" 
-                                    placeholder="e.g. Verified ID, Coupon code used..."
+                                <Label htmlFor="remarks">{t("Redemption Remarks (Optional)") }</Label>
+                                <Input
+                                    id="remarks"
+                                    placeholder={t("e.g. Verified ID, Coupon code used...")}
                                     value={redemptionRemarks}
                                     onChange={(e) => setRedemptionRemarks(e.target.value)}
                                 />
@@ -620,15 +622,15 @@ export const KioskMode: React.FC<KioskModeProps> = ({
             )}
 
             <DialogFooter className="gap-2 border-t border-black/5 bg-white/70 px-6 py-4 sm:gap-2">
-                <Button variant="outline" className="rounded-full border-black/10" onClick={() => setConfirmAction(null)} disabled={mutationBusy}>Cancel</Button>
-                
+                <Button variant="outline" className="rounded-full border-black/10" onClick={() => setConfirmAction(null)} disabled={mutationBusy}>{t("Cancel") }</Button>
+
                 {confirmAction === 'remove' ? (
                     <Button variant="destructive" className="rounded-full" onClick={handleConfirmAction} disabled={mutationBusy}>
-                        {mutationBusy ? "Saving..." : confirmCopy?.buttonLabel}
+                        {mutationBusy ? t("Saving...") : confirmCopy?.buttonLabel}
                     </Button>
                 ) : (
                     <Button className={cn("rounded-full", confirmCopy?.buttonClassName)} onClick={handleConfirmAction} disabled={mutationBusy}>
-                        {mutationBusy ? "Saving..." : confirmCopy?.buttonLabel}
+                        {mutationBusy ? t("Saving...") : confirmCopy?.buttonLabel}
                     </Button>
                 )}
             </DialogFooter>

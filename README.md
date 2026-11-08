@@ -86,8 +86,15 @@ Do not use the demo seed account as-is in production.
 - `npm run generate:sitemap`: regenerate `public/sitemap.xml`
 - `npm run build`: regenerate the sitemap, then build the production bundle
 - `npm run preview`: preview the production build locally
+- `npm run test:i18n`: validate language resolution, interpolation, catalog placeholder parity, and literal translation-call coverage
 
-There is currently no automated test suite in the repo. `npm run build` is the main verification step for this project today.
+The i18n checks are focused unit/static checks, not a replacement for authenticated business-isolation or end-to-end tests. Run `npm run build` as well before deploying.
+
+## Interface Languages
+
+The public pages and application UI support Spanish and English. Use the persistent language selector on any page. The initial language follows the browser unless a prior choice is saved; the choice is stored locally under `stampee.ui.language`, applies across business workspaces, and does not reload the app or change the active session. If local storage is unavailable, switching still works for the current page session.
+
+Translations are rendered from React source through `useI18n()` and the domain catalogs in `lib/i18n/catalogs/`; there is no DOM text-replacement layer or external translation service. English source messages are the catalog keys, and variables use `{name}` placeholders. Dates and numbers use the selected locale where rendered. Business/customer names, entered campaign content, links, IDs, database enums, and stored transaction data are not translated or rewritten when the interface language changes.
 
 ## Product Notes
 

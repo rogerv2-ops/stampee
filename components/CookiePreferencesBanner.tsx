@@ -1,3 +1,4 @@
+import { useI18n } from "../lib/i18n";
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
@@ -10,6 +11,7 @@ type CookiePreferences = {
 const COOKIE_PREFS_KEY = "stampee_cookie_preferences_v1";
 
 export const CookiePreferencesBanner: React.FC = () => {
+  const { t, locale } = useI18n();
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
@@ -44,12 +46,12 @@ export const CookiePreferencesBanner: React.FC = () => {
       <div className="mx-auto max-w-[88rem] rounded-2xl border border-white/10 bg-[#1d1d1f]/96 p-4 text-white shadow-[0_30px_70px_-34px_rgba(0,0,0,0.65)] backdrop-blur-xl sm:p-5">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div className="max-w-4xl">
-            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-white/70">Cookie Preferences</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-white/70">{t("Cookie Preferences")}</p>
             <p className="mt-2 text-sm leading-6 text-white/85 sm:text-[0.95rem]">
-              We use cookies to enhance your experience. Essential cookies are required for the site to function.
-              Analytics cookies help us improve our service.{" "}
+              {t("We use cookies to enhance your experience. Essential cookies are required for the site to function.")}
+              {t("Analytics cookies help us improve our service.")} {" "}
               <Link to="/cookie" className="font-semibold underline underline-offset-2 hover:text-white">
-                Learn more
+                {t("Learn more")}
               </Link>
               .
             </p>
@@ -61,14 +63,14 @@ export const CookiePreferencesBanner: React.FC = () => {
               onClick={() => savePreferences(false)}
               className="h-10 rounded-full border border-white/25 px-4 text-sm font-medium text-white/90 transition-colors hover:bg-white/10"
             >
-              Essential Only
+              {t("Essential Only")}
             </button>
             <button
               type="button"
               onClick={() => savePreferences(true)}
               className="h-10 rounded-full bg-white px-4 text-sm font-semibold text-[#1d1d1f] transition-colors hover:bg-white/90"
             >
-              Allow Analytics
+              {t("Allow Analytics")}
             </button>
           </div>
         </div>

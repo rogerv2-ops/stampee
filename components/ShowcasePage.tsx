@@ -1,3 +1,4 @@
+import { useI18n } from "../lib/i18n";
 import React from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, MonitorPlay } from "lucide-react";
@@ -24,7 +25,9 @@ const showcaseImages = showcaseCardPaths.map((href, index) => ({
   href,
 }));
 
-const ShowcasePreviewCard: React.FC<(typeof showcaseImages)[number]> = ({ src, alt, href }) => (
+const ShowcasePreviewCard: React.FC<(typeof showcaseImages)[number]> = ({ src, alt, href }) => {
+  const { t } = useI18n();
+  return (
   <a
     className="showcase-card group block"
     href={href}
@@ -32,13 +35,15 @@ const ShowcasePreviewCard: React.FC<(typeof showcaseImages)[number]> = ({ src, a
     rel="noopener noreferrer"
   >
     <div className="relative aspect-[380/750] w-full overflow-hidden rounded-[2.4rem] border border-black/5 bg-white shadow-[0_32px_80px_-40px_rgba(0,0,0,0.26)]">
-      <img src={src} alt={alt} className="h-full w-full object-cover" loading="lazy" />
+      <img src={src} alt={t(alt)} className="h-full w-full object-cover" loading="lazy" />
       <div className="absolute inset-0 bg-black/0 transition-colors duration-300 group-hover:bg-black/[0.04]" />
     </div>
   </a>
-);
+  );
+};
 
 export const ShowcasePage: React.FC = () => {
+  const { t, locale } = useI18n();
   const { currentUser, isStaff } = useAuth();
   const primaryPath = currentUser ? (isStaff ? "/issued-cards" : "/dashboard") : "/signup";
   const primaryLabel = currentUser ? "Open dashboard" : "Create account";
@@ -71,14 +76,14 @@ export const ShowcasePage: React.FC = () => {
       <header className="fixed top-0 z-30 w-full border-b border-black/[0.06] bg-white/75 backdrop-blur-2xl">
         <div className="mx-auto flex max-w-[88rem] items-center justify-between px-4 py-4 sm:px-6">
           <Link to="/" className="inline-flex items-center">
-            <img src="/stampee.svg" alt="Stampee" className="h-8 w-auto" />
+            <img src="/stampee.svg" alt={"Stampee"} className="h-8 w-auto" />
           </Link>
           <nav className="flex items-center gap-2">
             <Button asChild variant="ghost" className="hidden rounded-full text-sm font-medium text-[#1d1d1f] hover:bg-black/[0.06] sm:inline-flex">
-              <Link to="/articles">Articles</Link>
+              <Link to="/articles">{t("Articles")}</Link>
             </Button>
             <Button asChild className="rounded-full bg-[#1d1d1f] px-5 text-sm font-medium text-white hover:bg-black/80">
-              <Link to={primaryPath}>{primaryLabel}</Link>
+              <Link to={primaryPath}>{t(primaryLabel)}</Link>
             </Button>
           </nav>
         </div>
@@ -96,20 +101,20 @@ export const ShowcasePage: React.FC = () => {
             <div className="max-w-[62rem]">
               <div className="showcase-chip mb-7 inline-flex items-center gap-2 rounded-full border border-[#17351a]/10 bg-white/35 px-5 py-2 text-[0.72rem] font-semibold uppercase tracking-[0.24em] text-[#284b1f] backdrop-blur-sm">
                 <MonitorPlay className="h-3.5 w-3.5" />
-                Demos & Templates
+                {t("Demos & Templates")}
               </div>
               <h1 className="max-w-[14ch] text-[clamp(3.2rem,6.5vw,6rem)] font-black leading-[0.92] tracking-[-0.05em] text-[#17351a]">
-                See how loyalty looks before you launch it.
+                {t("See how loyalty looks before you launch it.")}
               </h1>
               <p className="mt-8 max-w-[50rem] text-[clamp(1.08rem,1.65vw,1.42rem)] leading-[1.45] text-[#23461d]/82">
-                Browse live card demos, explore ready-made templates, and find a starting point that already feels close to your brand.
+                {t("Browse live card demos, explore ready-made templates, and find a starting point that already feels close to your brand.")}
               </p>
               <div className="mt-10 flex flex-wrap gap-4">
                 <Button asChild className="h-14 rounded-[1.4rem] bg-[#17351a] px-8 text-base font-semibold text-white shadow-[0_26px_50px_-28px_rgba(23,53,26,0.85)] hover:bg-[#102712]">
-                  <Link to="#templates">Browse templates</Link>
+                  <Link to="#templates">{t("Browse templates")}</Link>
                 </Button>
                 <Button asChild variant="ghost" className="h-14 rounded-[1.4rem] bg-white/55 px-8 text-base font-medium text-[#17351a] hover:bg-white/75">
-                  <Link to="/articles">Read articles</Link>
+                  <Link to="/articles">{t("Read articles")}</Link>
                 </Button>
               </div>
             </div>
@@ -135,20 +140,20 @@ export const ShowcasePage: React.FC = () => {
             <div className="showcase-drift-b absolute right-[-8%] bottom-[6%] h-[360px] w-[360px] rounded-full bg-violet-300/16 blur-[120px]" />
           </div>
           <div className="relative mx-auto max-w-[82rem] text-center">
-            <p className="text-[0.72rem] font-semibold uppercase tracking-[0.26em] text-white/55">Next step</p>
+            <p className="text-[0.72rem] font-semibold uppercase tracking-[0.26em] text-white/55">{t("Next step")}</p>
             <h2 className="mt-6 text-[clamp(3rem,6vw,5.5rem)] font-semibold leading-[0.98] tracking-tight">
-              Take a demo into your own brand.
+              {t("Take a demo into your own brand.")}
             </h2>
             <p className="mx-auto mt-6 max-w-2xl text-[clamp(1.06rem,1.45vw,1.3rem)] leading-relaxed text-white/72">
-              Start with a template, adjust the reward and style, and get your first loyalty program live fast.
+              {t("Start with a template, adjust the reward and style, and get your first loyalty program live fast.")}
             </p>
             <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
               <Button asChild className="h-[3.6rem] rounded-full bg-white px-10 text-base font-semibold text-[#1d1d1f] hover:bg-white/92">
-                <Link to={primaryPath}>{primaryLabel}</Link>
+                <Link to={primaryPath}>{t(primaryLabel)}</Link>
               </Button>
               <Button asChild variant="ghost" className="h-[3.6rem] rounded-full border border-white/20 bg-white/10 px-10 text-base font-medium text-white hover:bg-white/16">
                 <Link to="/articles/getting-started">
-                  Read the guide
+                  {t("Read the guide")}
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Link>
               </Button>

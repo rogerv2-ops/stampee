@@ -6,6 +6,7 @@ import { LayoutGrid } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { Button } from './ui/button';
 import { useNavigate } from 'react-router-dom';
+import { useI18n } from '../lib/i18n';
 
 const CATEGORIES = ["All", "Food & Drink", "Beauty & Wellness", "Services", "Retail"];
 
@@ -27,6 +28,7 @@ interface ResponsiveCardPreviewProps {
 }
 
 const ResponsiveCardPreview: React.FC<ResponsiveCardPreviewProps> = ({ template, onSelect }) => {
+    const { t } = useI18n();
     const containerRef = useRef<HTMLDivElement>(null);
     const [scale, setScale] = useState(1);
 
@@ -40,38 +42,38 @@ const ResponsiveCardPreview: React.FC<ResponsiveCardPreviewProps> = ({ template,
                  setScale(width / BASE_WIDTH);
             }
         });
-        
+
         if (containerRef.current) {
             observer.observe(containerRef.current);
         }
-        
+
         return () => observer.disconnect();
     }, []);
 
     return (
-        <div 
+        <div
             className="group flex flex-col items-center gap-6 cursor-pointer w-full max-w-[380px] mx-auto"
             onClick={() => onSelect(template.id)}
         >
-             <div 
+             <div
                 ref={containerRef}
                 className="relative w-full aspect-[380/750] rounded-[2.5rem] shadow-2xl border border-gray-100 bg-white group-hover:scale-[1.02] transition-all duration-300 overflow-hidden ring-1 ring-black/5"
             >
-                <div 
+                <div
                     className="origin-top-left absolute top-0 left-0 will-change-transform"
-                    style={{ 
-                        width: `${BASE_WIDTH}px`, 
-                        height: `${BASE_HEIGHT}px`, 
-                        transform: `scale(${scale})` 
+                    style={{
+                        width: `${BASE_WIDTH}px`,
+                        height: `${BASE_HEIGHT}px`,
+                        transform: `scale(${scale})`
                     }}
                 >
-                    <LoyaltyCard 
-                        template={template} 
-                        mode="active" 
-                        className="w-full h-full pointer-events-none" 
+                    <LoyaltyCard
+                        template={template}
+                        mode="active"
+                        className="w-full h-full pointer-events-none"
                     />
                 </div>
-                 
+
                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors pointer-events-none z-10" />
             </div>
 
@@ -83,7 +85,7 @@ const ResponsiveCardPreview: React.FC<ResponsiveCardPreviewProps> = ({ template,
                     <span className={cn(
                         "text-xs px-2.5 py-1 rounded-full font-semibold bg-secondary text-secondary-foreground border"
                     )}>
-                        {template.totalStamps} Stamps
+                        {t('{count} Stamps', { count: template.totalStamps })}
                     </span>
                     <span className="text-xs text-muted-foreground truncate max-w-[200px]" title={template.rewardName}>
                        {template.rewardName}
@@ -96,6 +98,7 @@ const ResponsiveCardPreview: React.FC<ResponsiveCardPreviewProps> = ({ template,
 
 export const TemplatesGallery: React.FC = () => {
   const navigate = useNavigate();
+  const { t } = useI18n();
   const [activeCategory, setActiveCategory] = useState("All");
 
   const filteredTemplates = templates.filter(template => {
@@ -115,25 +118,25 @@ export const TemplatesGallery: React.FC = () => {
                 <LayoutGrid size={24} />
             </div>
             <div>
-                <h1 className="text-3xl font-bold tracking-tight text-foreground">Templates</h1>
-                <p className="text-muted-foreground">Select a design to start your customer loyalty program.</p>
+                <h1 className="text-3xl font-bold tracking-tight text-foreground">{t('Templates')}</h1>
+                <p className="text-muted-foreground">{t('Select a design to start your customer loyalty program.')}</p>
             </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
             {CATEGORIES.map((category) => (
                 <Button
-                    key={category}
+                    key={t(category)}
                     variant={activeCategory === category ? "default" : "outline"}
                     onClick={() => setActiveCategory(category)}
                     className={cn(
                         "rounded-full px-4 h-8 text-xs font-medium transition-all",
-                        activeCategory === category 
-                            ? "shadow-md hover:opacity-90" 
+                        activeCategory === category
+                            ? "shadow-md hover:opacity-90"
                             : "bg-white hover:bg-gray-100 border-gray-200 text-gray-600"
                     )}
                 >
-                    {category}
+                    {t(category)}
                 </Button>
             ))}
         </div>
@@ -141,10 +144,10 @@ export const TemplatesGallery: React.FC = () => {
 
       <div className="grid grid-cols-[repeat(auto-fill,minmax(320px,1fr))] gap-10 pb-12 px-2 md:px-4">
         {filteredTemplates.map((template) => (
-          <ResponsiveCardPreview 
-            key={template.id} 
-            template={template} 
-            onSelect={handleSelect} 
+          <ResponsiveCardPreview
+            key={template.id}
+            template={template}
+            onSelect={handleSelect}
           />
         ))}
       </div>

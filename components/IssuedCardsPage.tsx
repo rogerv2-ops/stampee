@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import { useI18n } from "../lib/i18n";
 import { useSearchParams } from 'react-router-dom';
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
@@ -36,6 +37,7 @@ export const IssuedCardsPage: React.FC<IssuedCardsPageProps> = ({ customers, cam
   const [searchParams, setSearchParams] = useSearchParams();
   const [searchQuery, setSearchQuery] = useState("");
   const { currentOwner, activeBusiness, isEmailVerified, isStaff, currentUser } = useAuth();
+  const { t, locale } = useI18n();
   useSubscriptionContext();
   const canIssue = isEmailVerified;
   const [mutationBusy, setMutationBusy] = useState(false);
@@ -67,7 +69,7 @@ export const IssuedCardsPage: React.FC<IssuedCardsPageProps> = ({ customers, cam
 
   const handleUpdateCard = async (customerId: string, cardId: string, updates: Partial<IssuedCard>) => {
     if (!activeBusiness) {
-      setMutationError("Select a business before updating this card.");
+      setMutationError(t("Select a business before updating this card."));
       return;
     }
     setMutationBusy(true);
@@ -83,7 +85,7 @@ export const IssuedCardsPage: React.FC<IssuedCardsPageProps> = ({ customers, cam
       if (Object.keys(dbUpdates).length > 0) {
         const updateResult = await updateIssuedCard(cardId, activeBusiness.id, dbUpdates);
         if (!updateResult.ok) {
-          throw new Error(updateResult.error ?? "Failed to update the card.");
+          throw new Error(updateResult.error ?? t("Failed to update the card."));
         }
         wroteData = true;
       }
@@ -97,7 +99,7 @@ export const IssuedCardsPage: React.FC<IssuedCardsPageProps> = ({ customers, cam
         for (const tx of newTxs) {
           const txResult = await insertTransaction(cardId, tx, activeBusiness.id);
           if (!txResult.ok) {
-            throw new Error(txResult.error ?? "Failed to record the card activity.");
+            throw new Error(txResult.error ?? t("Failed to record the card activity."));
           }
           wroteData = true;
         }
@@ -132,16 +134,16 @@ export const IssuedCardsPage: React.FC<IssuedCardsPageProps> = ({ customers, cam
 
   const handleRevokeCard = async (customerId: string, cardId: string) => {
     if (!activeBusiness) {
-      setMutationError("Select a business before revoking this card.");
+      setMutationError(t("Select a business before revoking this card."));
       return;
     }
-    if (confirm("Are you sure you want to revoke this card? This cannot be undone.")) {
+    if (confirm(t("Are you sure you want to revoke this card? This cannot be undone."))) {
       setMutationBusy(true);
       setMutationError("");
       try {
         const result = await deleteIssuedCard(cardId, activeBusiness.id);
         if (!result.ok) {
-          throw new Error(result.error ?? "Failed to revoke the card.");
+          throw new Error(result.error ?? t("Failed to revoke the card."));
         }
         setCustomers(prev => prev.map(c => {
           if (c.id === customerId) {
@@ -150,7 +152,7 @@ export const IssuedCardsPage: React.FC<IssuedCardsPageProps> = ({ customers, cam
           return c;
         }));
       } catch (error) {
-        setMutationError("Unable to revoke this card right now. Please try again.");
+        setMutationError(t("Unable to revoke this card right now. Please try again."));
       } finally {
         setMutationBusy(false);
       }
@@ -160,7 +162,7 @@ export const IssuedCardsPage: React.FC<IssuedCardsPageProps> = ({ customers, cam
   const handleKioskIssueNew = (customer: Customer, template: Template) => {
     if (!canIssue) return;
     if (template.isEnabled === false) {
-      setMutationError("This campaign is disabled and cannot issue new cards.");
+      setMutationError(t("This campaign is disabled and cannot issue new cards."));
       return;
     }
     setPreSelectedCampaign(template);
@@ -177,13 +179,13 @@ export const IssuedCardsPage: React.FC<IssuedCardsPageProps> = ({ customers, cam
 
   const handleIssueCard = async (campaign: Template, customer: Customer | null, newCustomerData: { name: string, email: string, mobile: string }): Promise<IssuedCard> => {
     if (!currentOwner) {
-      throw new Error("You must be signed in as an owner or staff member to issue cards.");
+      throw new Error(t("You must be signed in as an owner or staff member to issue cards."));
     }
     if (campaign.isEnabled === false) {
-      throw new Error("This campaign is disabled and cannot issue new cards.");
+      throw new Error(t("This campaign is disabled and cannot issue new cards."));
     }
 
-    const actorName = currentUser?.businessName ?? "Owner";
+    const actorName = currentUser?.businessName ?? t("Owner");
     const actorRole = currentUser?.role ?? "owner";
     const actorId = currentUser?.id;
 
@@ -204,7 +206,7 @@ export const IssuedCardsPage: React.FC<IssuedCardsPageProps> = ({ customers, cam
         activeBusiness.id, currentOwner.id
       );
       if (!customerResult.ok) {
-        throw new Error(customerResult.error ?? "Failed to create the customer record.");
+        throw new Error(customerResult.error ?? t("Failed to create the customer record."));
       }
     }
 
@@ -218,7 +220,7 @@ export const IssuedCardsPage: React.FC<IssuedCardsPageProps> = ({ customers, cam
         hour: 'numeric', minute: '2-digit', hour12: true
       }),
       timestamp: now.getTime(),
-      title: "Card Issued",
+      title: t("Card Issued"),
       actorName,
       actorRole,
       actorId
@@ -245,12 +247,12 @@ export const IssuedCardsPage: React.FC<IssuedCardsPageProps> = ({ customers, cam
       templateSnapshot: toStoredTemplate(campaign),
     }, activeBusiness.id, currentOwner.id);
     if (!cardResult.ok) {
-      throw new Error(cardResult.error ?? "Failed to create the card.");
+      throw new Error(cardResult.error ?? t("Failed to create the card."));
     }
 
     const txResult = await insertTransaction(newCard.id, initialTransaction, activeBusiness.id);
     if (!txResult.ok) {
-      throw new Error(txResult.error ?? "Failed to record the initial transaction.");
+      throw new Error(txResult.error ?? t("Failed to record the initial transaction."));
     }
 
     const targetId = targetCustomer.id;
@@ -303,7 +305,7 @@ export const IssuedCardsPage: React.FC<IssuedCardsPageProps> = ({ customers, cam
     clearKioskQuery();
 
     if (!match) {
-      setMutationError("Card not found. Try scanning again.");
+      setMutationError(t("Card not found. Try scanning again."));
       return;
     }
 
@@ -314,7 +316,7 @@ export const IssuedCardsPage: React.FC<IssuedCardsPageProps> = ({ customers, cam
   const handleScanResult = useCallback(async (value: string): Promise<ScanDetectionResult> => {
     const cardId = extractCardId(value);
     if (!cardId) {
-      return { ok: false, message: "QR code is invalid. Try scanning again." };
+      return { ok: false, message: t("QR code is invalid. Try scanning again.") };
     }
 
     const match = findKioskMatch(cardId);
@@ -326,7 +328,7 @@ export const IssuedCardsPage: React.FC<IssuedCardsPageProps> = ({ customers, cam
 
     const inspection = await inspectScannedCard(cardId);
     if (inspection.status === 'foreign') {
-      return { ok: false, message: "This card is not part of your business." };
+      return { ok: false, message: t("This card is not part of your business.") };
     }
 
     if (inspection.status === 'owned') {
@@ -341,7 +343,7 @@ export const IssuedCardsPage: React.FC<IssuedCardsPageProps> = ({ customers, cam
       return { ok: true };
     }
 
-    return { ok: false, message: "Card not found. Try scanning again." };
+    return { ok: false, message: t("Card not found. Try scanning again.") };
   }, [findKioskMatch, refreshData, setSearchParams]);
 
   const flatList = customers.flatMap(c => c.cards.map(card => ({ customer: c, card })));
@@ -403,7 +405,7 @@ export const IssuedCardsPage: React.FC<IssuedCardsPageProps> = ({ customers, cam
           onIssueNew={handleKioskIssueNew}
           canIssue={canIssue}
           allowRedeem={true}
-          actorName={currentUser?.businessName ?? "Owner"}
+          actorName={currentUser?.businessName ?? t("Owner")}
           actorRole={currentUser?.role ?? "owner"}
           actorId={currentUser?.id}
           onScanRequest={() => setIsScanOpen(true)}
@@ -429,20 +431,20 @@ export const IssuedCardsPage: React.FC<IssuedCardsPageProps> = ({ customers, cam
 
       <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
         <div className="min-w-0">
-          <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground">Issued Cards</h1>
-          <p className="text-sm text-muted-foreground md:text-base">Monitor active cards and open Kiosk Mode for stamping.</p>
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground">{t("Issued Cards")}</h1>
+          <p className="text-sm text-muted-foreground md:text-base">{t("Monitor active cards and open Kiosk Mode for stamping.")}</p>
         </div>
         <div className="flex w-full flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center lg:w-auto lg:justify-end">
           <Button variant="outline" className="w-full gap-2 rounded-full sm:w-auto" onClick={() => setIsScanOpen(true)}>
-            <QrCode size={16} /> Scan QR
+            <QrCode size={16} /> {t("Scan QR")}
           </Button>
           <div className="flex w-full flex-col gap-2 sm:w-auto sm:items-end">
             <Button onClick={openIssueWizard} className="w-full gap-2 rounded-full px-6 shadow-sm sm:w-auto" disabled={!canIssue}>
-              <Plus size={16} /> Issue New Card
+              <Plus size={16} /> {t("Issue New Card")}
             </Button>
             {!canIssue && (
               <div className="flex items-center gap-2 text-xs text-amber-600 sm:justify-end">
-                <Lock size={12} /> Confirm your email to issue cards.
+                <Lock size={12} /> {t("Confirm your email to issue cards.")}
               </div>
             )}
           </div>
@@ -459,7 +461,7 @@ export const IssuedCardsPage: React.FC<IssuedCardsPageProps> = ({ customers, cam
         <Search className="text-gray-400" size={20} />
         <input
           className="flex-1 outline-none text-sm bg-transparent placeholder:text-muted-foreground"
-          placeholder="Find a card..."
+          placeholder={t("Find a card...")}
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
         />
@@ -468,7 +470,7 @@ export const IssuedCardsPage: React.FC<IssuedCardsPageProps> = ({ customers, cam
       <div className="rounded-xl border bg-white shadow-sm">
         {cardRows.length === 0 ? (
           <div className="flex h-32 items-center justify-center px-4 text-center text-sm text-muted-foreground">
-            No cards found. Issue one to get started.
+            {t("No cards found. Issue one to get started.")}
           </div>
         ) : (
           <>
@@ -492,10 +494,10 @@ export const IssuedCardsPage: React.FC<IssuedCardsPageProps> = ({ customers, cam
                       <div className={cn("min-w-0", isRedeemed && "opacity-60")}>
                         <div className="flex flex-wrap items-center gap-2">
                           <h2 className="text-sm font-semibold text-foreground">{card.campaignName}</h2>
-                          {isArchivedCampaign && <Badge variant="outline" className="text-[10px] uppercase tracking-wide">Archived campaign</Badge>}
-                          {isRedeemed && <span className="rounded bg-gray-200 px-1.5 py-0.5 text-[10px] font-bold uppercase text-gray-600">Redeemed</span>}
+                          {isArchivedCampaign && <Badge variant="outline" className="text-[10px] uppercase tracking-wide">{t("Archived campaign")}</Badge>}
+                          {isRedeemed && <span className="rounded bg-gray-200 px-1.5 py-0.5 text-[10px] font-bold uppercase text-gray-600">{t("Redeemed")}</span>}
                         </div>
-                        <p className="mt-1 truncate text-xs font-mono text-muted-foreground">ID: {card.uniqueId.slice(0, 8)}</p>
+                        <p className="mt-1 truncate text-xs font-mono text-muted-foreground">{t("ID:")} {card.uniqueId.slice(0, 8)}</p>
                       </div>
                     </div>
                     <DropdownMenu>
@@ -505,9 +507,9 @@ export const IssuedCardsPage: React.FC<IssuedCardsPageProps> = ({ customers, cam
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Manage Card</DropdownMenuLabel>
+                        <DropdownMenuLabel>{t("Manage Card")}</DropdownMenuLabel>
                         <DropdownMenuItem onClick={() => openPublicLink(card.uniqueId)}>
-                          <ExternalLink className="mr-2 h-4 w-4" /> Public Link
+                          <ExternalLink className="mr-2 h-4 w-4" /> {t("Public Link")}
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         {!isStaff && (
@@ -515,7 +517,7 @@ export const IssuedCardsPage: React.FC<IssuedCardsPageProps> = ({ customers, cam
                             className="text-red-600"
                             onClick={() => handleRevokeCard(customer.id, card.id)}
                           >
-                            <Trash className="mr-2 h-4 w-4" /> Revoke
+                            <Trash className="mr-2 h-4 w-4" /> {t("Revoke")}
                           </DropdownMenuItem>
                         )}
                       </DropdownMenuContent>
@@ -536,9 +538,9 @@ export const IssuedCardsPage: React.FC<IssuedCardsPageProps> = ({ customers, cam
 
                   <div className="mt-4 space-y-2">
                     <div className="flex items-center justify-between gap-3">
-                      <span className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">Progress</span>
+                      <span className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">{t("Progress")}</span>
                       {isRedeemed ? (
-                        <span className="text-sm font-medium text-muted-foreground">Completed</span>
+                        <span className="text-sm font-medium text-muted-foreground">{t("Completed")}</span>
                       ) : (
                         <span className="text-sm font-bold text-foreground">
                           {card.stamps} <span className="font-normal text-muted-foreground">/ {campaign.totalStamps}</span>
@@ -563,7 +565,7 @@ export const IssuedCardsPage: React.FC<IssuedCardsPageProps> = ({ customers, cam
                       onClick={() => setActiveKioskData({ customer, card, template: campaign })}
                     >
                       {isRedeemed ? <Lock size={14} /> : <MonitorPlay size={14} />}
-                      {isRedeemed ? "View Card" : (canRedeem ? "Redeem Reward" : "Open Kiosk")}
+                      {isRedeemed ? t("View Card") : (canRedeem ? t("Redeem Reward") : "Open Kiosk")}
                     </Button>
                   </div>
                 </div>
@@ -574,10 +576,10 @@ export const IssuedCardsPage: React.FC<IssuedCardsPageProps> = ({ customers, cam
               <Table>
                 <TableHeader>
                   <TableRow className="bg-muted/30">
-                    <TableHead className="w-[300px]">Card Details</TableHead>
-                    <TableHead>Customer</TableHead>
-                    <TableHead className="text-right">Progress</TableHead>
-                    <TableHead className="text-right">Action</TableHead>
+                    <TableHead className="w-[300px]">{t("Card Details")}</TableHead>
+                    <TableHead>{t("Customer")}</TableHead>
+                    <TableHead className="text-right">{t("Progress")}</TableHead>
+                    <TableHead className="text-right">{t("Action")}</TableHead>
                     <TableHead className="w-[50px]"></TableHead>
                   </TableRow>
                 </TableHeader>
@@ -595,10 +597,10 @@ export const IssuedCardsPage: React.FC<IssuedCardsPageProps> = ({ customers, cam
                           <div className={cn(isRedeemed && "opacity-60")}>
                             <div className="flex items-center gap-2 font-semibold text-foreground">
                               {card.campaignName}
-                              {isArchivedCampaign && <Badge variant="outline" className="text-[10px] uppercase tracking-wide">Archived campaign</Badge>}
-                              {isRedeemed && <span className="rounded bg-gray-200 px-1.5 py-0.5 text-[10px] font-bold uppercase text-gray-600">Redeemed</span>}
+                              {isArchivedCampaign && <Badge variant="outline" className="text-[10px] uppercase tracking-wide">{t("Archived campaign")}</Badge>}
+                              {isRedeemed && <span className="rounded bg-gray-200 px-1.5 py-0.5 text-[10px] font-bold uppercase text-gray-600">{t("Redeemed")}</span>}
                             </div>
-                            <div className="font-mono text-xs text-muted-foreground">ID: {card.uniqueId.slice(0, 8)}</div>
+                            <div className="font-mono text-xs text-muted-foreground">{t("ID:")} {card.uniqueId.slice(0, 8)}</div>
                           </div>
                         </div>
                       </TableCell>
@@ -612,7 +614,7 @@ export const IssuedCardsPage: React.FC<IssuedCardsPageProps> = ({ customers, cam
                       </TableCell>
                       <TableCell className="text-right">
                         {isRedeemed ? (
-                          <div className="text-sm font-medium text-muted-foreground">Completed</div>
+                          <div className="text-sm font-medium text-muted-foreground">{t("Completed")}</div>
                         ) : (
                           <div className="flex flex-col items-end gap-1">
                             <div className="text-sm font-bold">
@@ -634,8 +636,8 @@ export const IssuedCardsPage: React.FC<IssuedCardsPageProps> = ({ customers, cam
                             variant="outline"
                             className="h-9 w-9 rounded-full"
                             onClick={() => openPublicLink(card.uniqueId)}
-                            aria-label="Open public link"
-                            title="Open public link"
+                            aria-label={t("Open public link")}
+                            title={t("Open public link")}
                           >
                             <ExternalLink size={14} />
                           </Button>
@@ -646,7 +648,7 @@ export const IssuedCardsPage: React.FC<IssuedCardsPageProps> = ({ customers, cam
                             onClick={() => setActiveKioskData({ customer, card, template: campaign })}
                           >
                             {isRedeemed ? <Lock size={14} /> : <MonitorPlay size={14} />}
-                            {isRedeemed ? "View" : (canRedeem ? "Redeem" : "Kiosk")}
+                            {isRedeemed ? t("View") : (canRedeem ? t("Redeem") : t("Kiosk"))}
                           </Button>
                         </div>
                       </TableCell>
@@ -658,9 +660,9 @@ export const IssuedCardsPage: React.FC<IssuedCardsPageProps> = ({ customers, cam
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuLabel>Manage Card</DropdownMenuLabel>
+                            <DropdownMenuLabel>{t("Manage Card")}</DropdownMenuLabel>
                             <DropdownMenuItem onClick={() => openPublicLink(card.uniqueId)}>
-                              <ExternalLink className="mr-2 h-4 w-4" /> Public Link
+                              <ExternalLink className="mr-2 h-4 w-4" /> {t("Public Link")}
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
                             {!isStaff && (
@@ -668,7 +670,7 @@ export const IssuedCardsPage: React.FC<IssuedCardsPageProps> = ({ customers, cam
                                 className="text-red-600"
                                 onClick={() => handleRevokeCard(customer.id, card.id)}
                               >
-                                <Trash className="mr-2 h-4 w-4" /> Revoke
+                                <Trash className="mr-2 h-4 w-4" /> {t("Revoke")}
                               </DropdownMenuItem>
                             )}
                           </DropdownMenuContent>

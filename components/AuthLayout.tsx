@@ -1,5 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
+import { useI18n } from "../lib/i18n";
 
 interface AuthLayoutProps {
   title: string;
@@ -58,6 +59,7 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
   theme = "login",
   children,
 }) => {
+  const { t: translate } = useI18n();
   const t = THEME_CONFIG[theme];
 
   return (
@@ -87,7 +89,7 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
             to={t.navLinkTo}
             className="rounded-full border border-black/[0.1] bg-white px-5 py-2 text-sm font-medium text-[#1d1d1f] shadow-sm transition-colors hover:bg-[#f5f5f7]"
           >
-            {t.navLinkLabel}
+            {translate(t.navLinkLabel)}
           </Link>
         </div>
       </header>
@@ -98,22 +100,22 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
         {/* ── Left: marketing panel (desktop only) ── */}
         <section className="hidden flex-col justify-center space-y-8 lg:flex">
           {badge && (
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#6e6e73]">{badge}</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#6e6e73]">{translate(badge)}</p>
           )}
           <h1 className="text-[clamp(2.5rem,5.5vw,4.2rem)] font-semibold leading-[1.06] tracking-tight text-[#1d1d1f]">
-            {title}
+            {translate(title)}
           </h1>
-          <p className="max-w-md text-lg leading-relaxed text-[#6e6e73]">{subtitle}</p>
+          <p className="max-w-md text-lg leading-relaxed text-[#6e6e73]">{translate(subtitle)}</p>
 
           {/* Stat cards */}
           <div className="grid max-w-sm grid-cols-2 gap-4">
             {t.metrics.map((m) => (
               <div
-                key={m.label}
+                key={translate(m.label)}
                 className="rounded-2xl border border-black/[0.07] bg-white/80 px-5 py-5 shadow-sm"
               >
                 <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#6e6e73]">
-                  {m.label}
+                  {translate(m.label)}
                 </p>
                 <p className="mt-2 text-3xl font-semibold tracking-tight text-[#1d1d1f]">{m.value}</p>
               </div>
@@ -122,7 +124,7 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
 
           {/* Quote */}
           <p className="max-w-sm border-l-2 border-black/[0.1] pl-4 text-sm leading-relaxed text-[#6e6e73]">
-            {t.quote}
+            {translate(t.quote)}
           </p>
 
           {/* Feature pills (signup only) */}
@@ -131,7 +133,7 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
               {t.features.map((f) => (
                 <div key={f} className="flex items-center gap-1.5 rounded-full border border-black/[0.07] bg-white/80 px-3 py-1.5 shadow-sm">
                   <div className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                  <span className="text-[11px] font-medium text-[#6e6e73]">{f}</span>
+                  <span className="text-[11px] font-medium text-[#6e6e73]">{translate(f)}</span>
                 </div>
               ))}
             </div>

@@ -2,6 +2,7 @@ import React, { Suspense, lazy, useEffect, useMemo, useState } from 'react';
 import { Loader2, PartyPopper, X } from 'lucide-react';
 import { ThemeColors } from '../types';
 import { resolveHexAndOpacity, hexToRgba } from '../lib/utils';
+import { useI18n } from '../lib/i18n';
 
 const LottiePlayer = lazy(() => import('lottie-react'));
 
@@ -36,6 +37,7 @@ interface RewardModalProps {
 }
 
 export const RewardModal: React.FC<RewardModalProps> = ({ isOpen, onClose, loading, reward, rewardName, businessName, showCloseButton = true, scope = 'fullscreen', colors }) => {
+  const { t } = useI18n();
   const [giftAnimation, setGiftAnimation] = useState<object | null>(null);
   const [selectedMessage, setSelectedMessage] = useState<string>(COMPLETION_MESSAGES[0]);
   const [isMobileViewport, setIsMobileViewport] = useState<boolean>(() => {
@@ -160,25 +162,25 @@ export const RewardModal: React.FC<RewardModalProps> = ({ isOpen, onClose, loadi
               <PartyPopper size={56} style={{ color: iconActive.hex }} />
             )}
           </div>
-          
+
           <h2 className="text-2xl font-bold">
-            {loading ? "Preparing Reward..." : "Card Completed!"}
+            {loading ? t('Preparing Reward...') : t('Card Completed!')}
           </h2>
 
           {loading ? (
              <p className="opacity-70" style={{ color: hexToRgba(mutedColor.hex, mutedColor.opacity) }}>
-               Preparing your reward...
+               {t('Preparing your reward...')}
              </p>
           ) : (
             <>
               <p className="italic" style={{ color: hexToRgba(mutedColor.hex, mutedColor.opacity) }}>"{selectedMessage}"</p>
-              
+
               <div
                 className="w-full p-4 rounded-lg border-2 border-dashed mt-2"
                 style={{ backgroundColor: panelBg.hex, borderColor: borderColor.hex }}
               >
                 <p className="text-xs uppercase tracking-wider mb-1 opacity-70" style={{ color: hexToRgba(mutedColor.hex, mutedColor.opacity) }}>
-                  Claim Your Reward
+                  {t('Claim Your Reward')}
                 </p>
                 <p className="text-2xl font-mono font-bold tracking-widest">
                   {rewardName}
@@ -186,7 +188,7 @@ export const RewardModal: React.FC<RewardModalProps> = ({ isOpen, onClose, loadi
               </div>
 
               <p className="text-xs mt-1 opacity-50" style={{ color: hexToRgba(mutedColor.hex, mutedColor.opacity) }}>
-                Show this card to the staff of "{businessName}".
+                 {t('Show this card to the staff of')} "{businessName}".
               </p>
             </>
           )}
