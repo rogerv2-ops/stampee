@@ -129,27 +129,27 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ campaigns, custome
 
   const statCards = [
     {
-      label: 'Campaigns',
+      label: t('Campaigns'),
       value: campaigns.length,
-      detail: campaigns.length === 1 ? '1 campaign live' : `${campaigns.length} campaigns live`,
+      detail: campaigns.length === 1 ? t('1 campaign live') : t('{count} campaigns live', { count: campaigns.length }),
       icon: CreditCard,
     },
     {
       label: t("Issued Cards"),
       value: cards.length,
-      detail: cards.length === 1 ? '1 card issued' : `${cards.length} cards issued`,
+      detail: cards.length === 1 ? t('1 card issued') : t('{count} cards issued', { count: cards.length }),
       icon: Wallet,
     },
     {
       label: t("Customers"),
       value: customers.length,
-      detail: customers.length === 1 ? '1 customer added' : `${customers.length} customers added`,
+      detail: customers.length === 1 ? t('1 customer added') : t('{count} customers added', { count: customers.length }),
       icon: Users,
     },
     {
       label: t("Active Cards"),
       value: activeCardCount,
-      detail: `${redeemedCardCount} redeemed`,
+      detail: t('{count} redeemed', { count: redeemedCardCount }),
       icon: Sparkles,
     },
   ];

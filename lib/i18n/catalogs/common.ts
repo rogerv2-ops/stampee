@@ -29,4 +29,8 @@ export default {
   'Card ID:': 'ID de tarjeta:',
   'QR code': 'Código QR',
   '{count} items': '{count} elementos',
+  'Name is required.': 'El nombre es obligatorio.',
+  'Business not found.': 'Negocio no encontrado.',
+  'Campaign not found.': 'Campaña no encontrada.',
+  'Unable to complete signup right now. Please try again.': 'No se pudo completar el registro ahora. Inténtalo de nuevo.',
 } satisfies Record<string, string>;

@@ -87,8 +87,38 @@ try {
     };
     visit(source);
   }
+
+  let dynamicLabels = 0;
+  for (const [relativeFile, variable, property] of [
+    ['components/CardEditor.tsx', 'PALETTE_PRESETS', 'name'],
+    ['lib/iconRegistry.tsx', 'ICON_OPTIONS', 'label'],
+  ]) {
+    const file = path.join(root, relativeFile);
+    const source = ts.createSourceFile(file, fs.readFileSync(file, 'utf8'), ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+    let checked = 0;
+    const visit = (node) => {
+      if (ts.isVariableDeclaration(node) && node.name.getText(source) === variable && node.initializer && ts.isArrayLiteralExpression(node.initializer)) {
+        for (const item of node.initializer.elements) {
+          if (!ts.isObjectLiteralExpression(item)) continue;
+          for (const member of item.properties) {
+            if (!ts.isPropertyAssignment(member) || member.name.getText(source) !== property || !ts.isStringLiteral(member.initializer)) continue;
+            const key = member.initializer.text;
+            if (!(key in spanishCatalog)) missing.push(`${relativeFile} ${variable}.${property}: ${key}`);
+            checked++;
+          }
+        }
+      }
+      ts.forEachChild(node, visit);
+    };
+    visit(source);
+    assert.ok(checked > 0, `No system labels checked in ${variable}`);
+    dynamicLabels += checked;
+  }
+  for (const key of ['Name is required.', 'Business not found.', 'Campaign not found.', 'Unable to complete signup right now. Please try again.']) {
+    assert.ok(key in spanishCatalog, `Missing public-signup error: ${key}`);
+  }
   assert.deepEqual(missing, [], `Missing Spanish entries:\n${missing.join('\n')}`);
-  console.log(`i18n OK: ${Object.keys(catalogs).length} catalogs, ${entries} entries, ${literalCalls} literal translation calls checked.`);
+  console.log(`i18n OK: ${Object.keys(catalogs).length} catalogs, ${entries} entries, ${literalCalls} literal calls and ${dynamicLabels} registry labels checked.`);
   console.log('Language selection, locale mapping, interpolation, English fallback and placeholder parity: OK.');
 } finally {
   fs.rmSync(temporary, { recursive: true, force: true });

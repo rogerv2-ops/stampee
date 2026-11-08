@@ -86,7 +86,11 @@ export const PublicCampaignSignupPage: React.FC = () => {
       return;
     }
 
-    setError(result.error);
+    const knownErrors = ['Name is required.', 'Business not found.', 'Campaign not found.'];
+    const errorMessage = knownErrors.includes(result.error)
+      ? result.error
+      : 'Unable to complete signup right now. Please try again.';
+    setError(t(errorMessage));
   };
 
   if (loading) {

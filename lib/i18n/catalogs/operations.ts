@@ -274,6 +274,13 @@ const operationsCatalog = {
   'At least 8 characters': 'Al menos 8 caracteres',
   '← Templates': '← Plantillas',
   'This action cannot be undone. This will permanently delete {name} from your campaigns, but any issued cards will stay active and keep using their saved card snapshot.': 'Esta acción no se puede deshacer. Eliminará permanentemente {name} de tus campañas, pero las tarjetas emitidas seguirán activas y usarán su copia guardada.',
+  '1 campaign live': '1 campaña activa',
+  '{count} campaigns live': '{count} campañas activas',
+  '1 card issued': '1 tarjeta emitida',
+  '{count} cards issued': '{count} tarjetas emitidas',
+  '1 customer added': '1 cliente registrado',
+  '{count} customers added': '{count} clientes registrados',
+  '{count} redeemed': '{count} canjeadas',
 } satisfies Record<string, string>;
 
 export default operationsCatalog;

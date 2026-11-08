@@ -825,7 +825,7 @@ export const CardEditor: React.FC<CardEditorProps> = ({ initialTemplate, onSave 
                                                 ))}
                                             </div>
                                             <span className="truncate text-sm font-semibold">
-                                                {selectedPalette?.name ?? t('Custom Theme')}
+                                                {selectedPalette ? t(selectedPalette.name) : t('Custom Theme')}
                                             </span>
                                         </div>
                                         <ChevronDown size={16} className="shrink-0 opacity-70" />
@@ -862,7 +862,7 @@ export const CardEditor: React.FC<CardEditorProps> = ({ initialTemplate, onSave 
                                                             />
                                                         ))}
                                                     </div>
-                                                    <span className="truncate font-medium">{palette.name}</span>
+                                                    <span className="truncate font-medium">{t(palette.name)}</span>
                                                 </div>
                                             </DropdownMenuItem>
                                         );
@@ -1078,7 +1078,7 @@ export const CardEditor: React.FC<CardEditorProps> = ({ initialTemplate, onSave 
                                         `}
                                     >
                                         <item.icon size={24} />
-                                        <span className="text-[10px] font-medium truncate w-full text-center">{item.label}</span>
+                                        <span className="text-[10px] font-medium truncate w-full text-center">{t(item.label)}</span>
                                     </button>
                                 )
                             })}
