@@ -78,11 +78,20 @@ const TemplatesGallery = lazy(() => import('./components/TemplatesGallery').then
 const TransactionsPage = lazy(() => import('./components/TransactionsPage').then((module) => ({ default: module.TransactionsPage })));
 const AnalyticsPage = lazy(() => import('./components/AnalyticsPage').then((module) => ({ default: module.AnalyticsPage })));
 const LoginPage = lazy(() => import('./components/LoginPage').then((module) => ({ default: module.LoginPage })));
+const SignupPage = lazy(() => import('./components/SignupPage').then((module) => ({ default: module.SignupPage })));
+const SignupConfirmationPage = lazy(() => import('./components/SignupConfirmationPage').then((module) => ({ default: module.SignupConfirmationPage })));
 const StaffLoginPage = lazy(() => import('./components/StaffLoginPage').then((module) => ({ default: module.StaffLoginPage })));
 const SettingsPage = lazy(() => import('./components/SettingsPage').then((module) => ({ default: module.SettingsPage })));
 const BusinessHubPage = lazy(() => import('./components/BusinessHubPage').then((module) => ({ default: module.BusinessHubPage })));
+const LandingPage = lazy(() => import('./components/LandingPage').then((module) => ({ default: module.LandingPage })));
 const ForgotPasswordPage = lazy(() => import('./components/ForgotPasswordPage').then((module) => ({ default: module.ForgotPasswordPage })));
 const DashboardPage = lazy(() => import('./components/DashboardPage').then((module) => ({ default: module.DashboardPage })));
+const ArticlesPage = lazy(() => import('./components/ArticlesPage').then((module) => ({ default: module.ArticlesPage })));
+const PrivacyPolicyPage = lazy(() => import('./components/PrivacyPolicyPage').then((module) => ({ default: module.PrivacyPolicyPage })));
+const CookiePolicyPage = lazy(() => import('./components/CookiePolicyPage').then((module) => ({ default: module.CookiePolicyPage })));
+const TermsPage = lazy(() => import('./components/TermsPage').then((module) => ({ default: module.TermsPage })));
+const GettingStartedArticlePage = lazy(() => import('./components/GettingStartedArticlePage').then((module) => ({ default: module.GettingStartedArticlePage })));
+const ShowcasePage = lazy(() => import('./components/ShowcasePage').then((module) => ({ default: module.ShowcasePage })));
 const PublicCampaignSignupPage = lazy(() => import('./components/PublicCampaignSignupPage').then((module) => ({ default: module.PublicCampaignSignupPage })));
 
 const RouteLoader: React.FC = () => (
@@ -666,12 +675,22 @@ const AppRoutes: React.FC = () => {
       )}
       <Routes>
         {/* Public Routes */}
-        <Route path="/" element={<Navigate to="/login" replace />} />
+        <Route path="/" element={withSuspense(<LandingPage />)} />
+        <Route path="/showcase" element={withSuspense(<ShowcasePage />)} />
+        <Route path="/articles" element={withSuspense(<ArticlesPage />)} />
+        <Route path="/privacy-policy" element={withSuspense(<PrivacyPolicyPage />)} />
+        <Route path="/cookie" element={withSuspense(<CookiePolicyPage />)} />
+        <Route path="/cokkie" element={<Navigate to="/cookie" replace />} />
+        <Route path="/cookie-policy" element={<Navigate to="/cookie" replace />} />
+        <Route path="/terms" element={withSuspense(<TermsPage />)} />
+        <Route path="/articles/getting-started" element={withSuspense(<GettingStartedArticlePage />)} />
         <Route path="/:slug/staff" element={withSuspense(<StaffLoginPage />)} />
         <Route path="/:slug/scan/:uniqueId" element={<StaffScanEntryWrapper />} />
         <Route path="/:slug/join/:campaignId" element={withSuspense(<PublicCampaignSignupPage />)} />
         <Route path="/:slug/:uniqueId" element={<PublicCardWrapper />} />
         <Route path="/login" element={withSuspense(<LoginPage />)} />
+        <Route path="/signup" element={withSuspense(<SignupPage />)} />
+        <Route path="/signup-confirmation" element={withSuspense(<SignupConfirmationPage />)} />
         <Route path="/forgot-password" element={withSuspense(<ForgotPasswordPage />)} />
 
         {/* Authenticated Routes */}

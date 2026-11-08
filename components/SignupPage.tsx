@@ -7,6 +7,7 @@ import { Input } from "./ui/input";
 import { useAuth } from "./AuthProvider";
 import { getSlugHint, isSlugValid, normalizeSlug } from "../lib/slug";
 import { trackEvent } from "../lib/analytics";
+import { APP_ORIGIN } from "../lib/siteConfig";
 
 const inputCls =
   "h-14 rounded-[1.2rem] border border-black/[0.08] bg-[#f4f1ea] px-4 text-[15px] text-[#171512] shadow-none placeholder:text-[#8a8276] focus-visible:border-black/25 focus-visible:bg-white focus-visible:ring-0";
@@ -203,7 +204,7 @@ export const SignupPage: React.FC = () => {
 
           <div className="flex items-center gap-2 rounded-[1.2rem] border border-black/[0.08] bg-white px-4 py-3.5 focus-within:border-black/25">
             <Link2 className="h-4 w-4 shrink-0 text-[#777062]" />
-            <span className="shrink-0 text-sm font-medium text-[#777062]">stampee.co/</span>
+            <span className="shrink-0 text-sm font-medium text-[#777062]">{APP_ORIGIN.replace(/^https?:\/\//, "")}/</span>
             <input
               value={normalizedSlug}
               onChange={(e) => {
