@@ -178,13 +178,15 @@ export const ScanQrDialog: React.FC<ScanQrDialogProps> = ({ isOpen, onClose, onD
 
             <div className="rounded-[26px] border border-white/10 bg-white/[0.04] p-4 shadow-[0_18px_45px_-34px_rgba(0,0,0,0.5)] sm:p-5">
               <div className="mb-3">
-                <Label className="text-white">{t("Card ID")}</Label>
+                <Label className="text-white">{t("Card code, UUID, or URL")}</Label>
               </div>
               <div className="flex flex-col gap-3 sm:flex-row">
                 <Input
                   value={manualValue}
                   onChange={(event) => setManualValue(event.target.value)}
-                  placeholder={t("Paste full card ID")}
+                  placeholder={t("Example: 547a-s5a7, UUID, or URL")}
+                  autoCapitalize="off"
+                  spellCheck={false}
                   className="h-12 border-white/10 bg-black/25 font-mono text-sm text-white placeholder:text-white/35"
                 />
                 <Button

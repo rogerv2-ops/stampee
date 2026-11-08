@@ -22,6 +22,7 @@ interface LoyaltyCardProps {
   className?: string;
   customerName?: string; // For public view
   cardId?: string; // For public view
+  cardCode?: string;
   qrValue?: string;
   sizeVariant?: 'default' | 'compact';
   history?: Transaction[];
@@ -40,6 +41,7 @@ export const LoyaltyCard: React.FC<LoyaltyCardProps> = ({
     className = "",
     customerName,
     cardId,
+    cardCode,
     qrValue,
     sizeVariant = 'default',
     history = [],
@@ -53,6 +55,7 @@ export const LoyaltyCard: React.FC<LoyaltyCardProps> = ({
   const [loadingReward, setLoadingReward] = useState<boolean>(false);
   const [rewardData, setRewardData] = useState<{ code: string; message: string } | null>(null);
   const [giftAnimation, setGiftAnimation] = useState<object | null>(null);
+  const [codeCopied, setCodeCopied] = useState(false);
 
   // Navigation State
   const [currentSlide, setCurrentSlide] = useState<0 | 1>(0);
@@ -256,6 +259,17 @@ export const LoyaltyCard: React.FC<LoyaltyCardProps> = ({
     setStamps(0);
     setShowReward(false);
     setRewardData(null);
+  };
+
+  const handleCopyCode = async () => {
+    if (!cardCode) return;
+    try {
+      await navigator.clipboard.writeText(cardCode);
+      setCodeCopied(true);
+      window.setTimeout(() => setCodeCopied(false), 1600);
+    } catch {
+      setCodeCopied(false);
+    }
   };
 
   // --- MOUSE WHEEL HANDLER ---
@@ -586,18 +600,25 @@ export const LoyaltyCard: React.FC<LoyaltyCardProps> = ({
                           </>
                         )}
                     </div>
-                    {(customerName || cardId) && (
+                    {(customerName || cardCode) && (
                       <div className="text-center space-y-1">
                         {customerName && (
                           <div className="text-sm text-gray-700">
                             {t('Issued to')} <span className="font-semibold">{customerName}</span>
                           </div>
                         )}
-                        {cardId && (
-                          <div className="text-xs text-gray-400 font-mono">
-                            {t("Card ID:")} {cardId}
-                          </div>
-                        )}
+                        <div className="flex flex-col items-center gap-2 text-xs text-gray-400 font-mono">
+                          <span>{t("Card code:")} {cardCode || t("Code unavailable")}</span>
+                          {cardCode && (
+                            <button
+                              type="button"
+                              onClick={handleCopyCode}
+                              className="rounded-full border border-gray-200 px-3 py-1 font-sans text-[11px] font-semibold text-gray-600 transition-colors hover:bg-gray-50"
+                            >
+                              {codeCopied ? t("Copied") : t("Copy code")}
+                            </button>
+                          )}
+                        </div>
                       </div>
                     )}
                 </div>

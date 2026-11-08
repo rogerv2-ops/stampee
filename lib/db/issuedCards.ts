@@ -12,7 +12,13 @@ export interface PublicScanEntryContext {
   };
   card: {
     uniqueId: string;
+    cardCode?: string;
   };
+}
+
+export interface ResolvedStaffCardReference {
+  uniqueId: string;
+  cardCode: string;
 }
 
 export async function insertIssuedCard(
@@ -26,8 +32,8 @@ export async function insertIssuedCard(
   },
   businessId: string,
   ownerId: string
-): Promise<{ ok: boolean; error?: string }> {
-  const { error } = await supabase.from('issued_cards').insert({
+): Promise<{ ok: boolean; cardCode?: string; error?: string }> {
+  const { data, error } = await supabase.from('issued_cards').insert({
     id: card.id,
     unique_id: card.uniqueId,
     customer_id: card.customerId,
@@ -39,14 +45,15 @@ export async function insertIssuedCard(
     last_visit: new Date().toISOString().split('T')[0],
     status: 'Active',
     template_snapshot: card.templateSnapshot ?? null,
-  });
+  }).select('card_code').single();
   if (error) {
     if (error.message.includes('CAMPAIGN_DISABLED')) {
       return { ok: false, error: 'This campaign is disabled and cannot issue new cards.' };
     }
     return { ok: false, error: 'Unable to issue this card right now. Please try again.' };
   }
-  return { ok: true };
+  if (!data?.card_code) return { ok: false, error: 'Unable to assign a card code. Please try again.' };
+  return { ok: true, cardCode: data.card_code };
 }
 
 export async function updateIssuedCard(
@@ -130,6 +137,22 @@ export async function inspectScannedCard(uniqueId: string): Promise<{ status: Sc
   return { status: 'missing' };
 }
 
+export async function resolveStaffCardCode(
+  businessId: string,
+  cardCode: string
+): Promise<ResolvedStaffCardReference | null> {
+  const { data, error } = await supabase.rpc('resolve_staff_card_code', {
+    business_id_input: businessId,
+    card_code_input: cardCode,
+  });
+  if (error || !data || typeof data !== 'object') return null;
+  const payload = data as { uniqueId?: string; cardCode?: string; unique_id?: string; card_code?: string };
+  const uniqueId = payload.uniqueId ?? payload.unique_id;
+  const resolvedCode = payload.cardCode ?? payload.card_code;
+  if (!uniqueId || !resolvedCode) return null;
+  return { uniqueId, cardCode: resolvedCode };
+}
+
 export async function fetchPublicScanEntryContext(
   slug: string,
   uniqueId: string
@@ -144,7 +167,7 @@ export async function fetchPublicScanEntryContext(
 
   const payload = data as {
     owner?: { id?: string; ownerUserId?: string; slug?: string; businessName?: string };
-    card?: { uniqueId?: string };
+    card?: { uniqueId?: string; cardCode?: string; unique_id?: string; card_code?: string };
   };
 
   if (!payload.owner?.id || !payload.owner.ownerUserId || !payload.owner.slug || !payload.card?.uniqueId) {
@@ -160,6 +183,7 @@ export async function fetchPublicScanEntryContext(
     },
     card: {
       uniqueId: payload.card.uniqueId,
+      cardCode: payload.card.cardCode ?? payload.card.card_code ?? '',
     },
   };
 }

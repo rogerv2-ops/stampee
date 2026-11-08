@@ -20,6 +20,7 @@ interface FlatTransaction extends Transaction {
     customerEmail: string;
     campaignName: string;
     cardId: string;
+    cardCode?: string;
 }
 
 const escapeCsvValue = (value: string | number | undefined) => {
@@ -44,7 +45,8 @@ export const TransactionsPage: React.FC<TransactionsPageProps> = ({ customers })
                   customerName: customer.name,
                   customerEmail: customer.email,
                   campaignName: card.campaignName,
-                  cardId: card.uniqueId
+                  cardId: card.uniqueId,
+                  cardCode: card.cardCode,
               }))
           )
       ).sort((a, b) => {
@@ -62,6 +64,7 @@ export const TransactionsPage: React.FC<TransactionsPageProps> = ({ customers })
               tx.customerName.toLowerCase().includes(lowerQuery) ||
               tx.campaignName.toLowerCase().includes(lowerQuery) ||
               tx.cardId.toLowerCase().includes(lowerQuery) ||
+              (tx.cardCode ?? '').replace(/-/g, '').includes(lowerQuery.replace(/[-\s]/g, '')) ||
               (tx.remarks && tx.remarks.toLowerCase().includes(lowerQuery));
 
           const matchesDate = dateFilter
@@ -92,6 +95,7 @@ export const TransactionsPage: React.FC<TransactionsPageProps> = ({ customers })
           t("Customer Email"),
           t("Campaign"),
           t("Card ID"),
+          t("Card code"),
           t("Action"),
           "Amount",
           t("Processed By"),
@@ -105,6 +109,7 @@ export const TransactionsPage: React.FC<TransactionsPageProps> = ({ customers })
           tx.customerEmail,
           tx.campaignName,
           tx.cardId,
+          tx.cardCode || "",
           getLabel(tx.type, t),
           tx.amount,
           tx.actorName || t("Owner"),
@@ -248,7 +253,7 @@ export const TransactionsPage: React.FC<TransactionsPageProps> = ({ customers })
                                         <span className="font-medium text-sm">{tx.campaignName}</span>
                                     </div>
                                     <div className="text-[10px] font-mono text-muted-foreground bg-gray-100 inline-block px-1.5 rounded mt-0.5">
-                                        #{tx.cardId.slice(0, 8)}
+                                        {tx.cardCode || t("Code unavailable")}
                                     </div>
                                 </TableCell>
                                 <TableCell>

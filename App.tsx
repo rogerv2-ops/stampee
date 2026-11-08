@@ -186,6 +186,7 @@ const PublicCardWrapper: React.FC = () => {
     card: IssuedCard;
     customer: Customer;
     template: Template;
+    cardCode?: string;
   } | null>(null);
 
   useEffect(() => {
@@ -249,7 +250,7 @@ const PublicCardWrapper: React.FC = () => {
         template = fromStoredTemplate(stored);
       }
 
-        if (active && template) setCardData({ card, customer, template });
+        if (active && template) setCardData({ card, customer, template, cardCode: data.card.cardCode });
         if (active) setLoading(false);
       } catch {
         if (active) setLoading(false);
@@ -274,7 +275,7 @@ const PublicCardWrapper: React.FC = () => {
     );
   }
 
-  const { card, customer, template } = cardData;
+  const { card, customer, template, cardCode } = cardData;
   const isRedeemed = card.status === 'Redeemed';
   const cardBackgroundHex = resolveHexAndOpacity(template.colors.background, '#f5f5f5').hex;
   const isDarkBackground = getHexLuminance(cardBackgroundHex) < 0.38;
@@ -307,7 +308,7 @@ const PublicCardWrapper: React.FC = () => {
               readOnly={true}
               currentStamps={card.stamps}
               customerName={customer.name}
-              cardId={card.uniqueId}
+              cardCode={cardCode}
               qrValue={buildStaffScanEntryUrl(slug ?? '', card.uniqueId)}
               className="h-full w-full"
               history={card.history}
@@ -324,7 +325,7 @@ const PublicCardWrapper: React.FC = () => {
               <h2 className="text-xl font-bold text-gray-900">{t('Redeemed')}</h2>
               <p className="mt-1 text-sm text-gray-600">{t('This card is closed.')}</p>
               <div className="mt-3 text-xs text-gray-500 font-mono">
-                {t('Card ID:')} {card.uniqueId}
+                {t('Card code:')} {cardCode || t('Code unavailable')}
               </div>
             </div>
           </div>

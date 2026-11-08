@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useI18n } from "../lib/i18n";
 import { useSearchParams } from 'react-router-dom';
 import {
@@ -7,7 +7,7 @@ import {
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import {
-  Plus, Search, CreditCard, MonitorPlay, MoreHorizontal, Trash, ExternalLink, Lock, QrCode
+  Plus, Search, CreditCard, MonitorPlay, MoreHorizontal, Trash, ExternalLink, Lock, QrCode, Copy
 } from "lucide-react";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
@@ -21,7 +21,8 @@ import { resolveCardTemplate, toStoredTemplate } from '../lib/templateSerializat
 import { useAuth } from './AuthProvider';
 import { buildPublicCardUrl } from '../lib/links';
 import { ScanDetectionResult, ScanQrDialog } from './ScanQrDialog';
-import { insertIssuedCard, updateIssuedCard, deleteIssuedCard, insertTransaction, inspectScannedCard } from '../lib/db/issuedCards';
+import { insertIssuedCard, updateIssuedCard, deleteIssuedCard, insertTransaction, inspectScannedCard, resolveStaffCardCode } from '../lib/db/issuedCards';
+import { normalizeCardCode, parseCardReference } from '../lib/cardCodes';
 import { upsertCustomer } from '../lib/db/customers';
 import { useSubscriptionContext } from './SubscriptionContext';
 
@@ -38,6 +39,9 @@ export const IssuedCardsPage: React.FC<IssuedCardsPageProps> = ({ customers, cam
   const [searchQuery, setSearchQuery] = useState("");
   const { currentOwner, activeBusiness, isEmailVerified, isStaff, currentUser } = useAuth();
   const { t, locale } = useI18n();
+  const businessScope = useRef({ id: activeBusiness?.id });
+  if (businessScope.current.id !== activeBusiness?.id) businessScope.current = { id: activeBusiness?.id };
+  const scanGeneration = useRef(0);
   useSubscriptionContext();
   const canIssue = isEmailVerified;
   const [mutationBusy, setMutationBusy] = useState(false);
@@ -178,12 +182,13 @@ export const IssuedCardsPage: React.FC<IssuedCardsPageProps> = ({ customers, cam
   };
 
   const handleIssueCard = async (campaign: Template, customer: Customer | null, newCustomerData: { name: string, email: string, mobile: string }): Promise<IssuedCard> => {
-    if (!currentOwner) {
+    if (!currentOwner || !activeBusiness) {
       throw new Error(t("You must be signed in as an owner or staff member to issue cards."));
     }
     if (campaign.isEnabled === false) {
       throw new Error(t("This campaign is disabled and cannot issue new cards."));
     }
+    const scope = businessScope.current;
 
     const actorName = currentUser?.businessName ?? t("Owner");
     const actorRole = currentUser?.role ?? "owner";
@@ -246,19 +251,24 @@ export const IssuedCardsPage: React.FC<IssuedCardsPageProps> = ({ customers, cam
       campaignName: campaign.name,
       templateSnapshot: toStoredTemplate(campaign),
     }, activeBusiness.id, currentOwner.id);
-    if (!cardResult.ok) {
-      throw new Error(cardResult.error ?? t("Failed to create the card."));
+    if (!cardResult.ok || !cardResult.cardCode) {
+      throw new Error(cardResult.error ?? t("Unable to assign a card code. Please try again."));
     }
+    newCard.cardCode = cardResult.cardCode;
 
     const txResult = await insertTransaction(newCard.id, initialTransaction, activeBusiness.id);
     if (!txResult.ok) {
       throw new Error(txResult.error ?? t("Failed to record the initial transaction."));
+    }
+    if (businessScope.current !== scope) {
+      throw new Error(t("Business changed. Check the original business for the result."));
     }
 
     const targetId = targetCustomer.id;
     const customerToAdd = targetCustomer;
 
     setCustomers(prev => {
+      if (businessScope.current !== scope) return prev;
       const exists = prev.find(c => c.id === targetId);
       if (exists) {
         return prev.map(c => c.id === targetId
@@ -273,20 +283,9 @@ export const IssuedCardsPage: React.FC<IssuedCardsPageProps> = ({ customers, cam
     return newCard;
   };
 
-  const extractCardId = (value: string) => {
-    let raw = value.trim();
-    if (!raw) return "";
-    try {
-      const url = new URL(raw);
-      const parts = url.pathname.split('/').filter(Boolean);
-      raw = parts[parts.length - 1] ?? raw;
-    } catch {
-      // not a URL
-    }
-    raw = raw.replace(/^#/, '');
-    raw = raw.replace(/\/+$/, '');
-    const segments = raw.split('/').filter(Boolean);
-    return segments[segments.length - 1] ?? raw;
+  const copyCardCode = async (cardCode?: string) => {
+    if (!cardCode) return;
+    await navigator.clipboard?.writeText(cardCode);
   };
 
   const clearKioskQuery = useCallback(() => {
@@ -296,6 +295,14 @@ export const IssuedCardsPage: React.FC<IssuedCardsPageProps> = ({ customers, cam
       return next;
     }, { replace: true });
   }, [setSearchParams]);
+
+  useEffect(() => {
+    setActiveKioskData(null);
+    setIsIssueOpen(false);
+    setIsScanOpen(false);
+    setPreSelectedCampaign(null);
+    setPreSelectedCustomer(null);
+  }, [activeBusiness?.id]);
 
   useEffect(() => {
     const kioskId = searchParams.get('kiosk');
@@ -314,19 +321,33 @@ export const IssuedCardsPage: React.FC<IssuedCardsPageProps> = ({ customers, cam
   }, [activeKioskData, clearKioskQuery, dataReady, findKioskMatch, searchParams]);
 
   const handleScanResult = useCallback(async (value: string): Promise<ScanDetectionResult> => {
-    const cardId = extractCardId(value);
-    if (!cardId) {
+    const scope = businessScope.current;
+    const generation = ++scanGeneration.current;
+    const isCurrent = () => businessScope.current === scope && scanGeneration.current === generation;
+    const reference = parseCardReference(value);
+    if (!reference) {
       return { ok: false, message: t("QR code is invalid. Try scanning again.") };
     }
 
-    const match = findKioskMatch(cardId);
+    const businessId = activeBusiness?.id;
+    if (!businessId) return { ok: false, message: t("Select a business before opening a card.") };
+    let uniqueId = reference.kind === 'uuid' ? reference.value : '';
+    if (reference.kind === 'code') {
+      const resolved = await resolveStaffCardCode(businessId, normalizeCardCode(reference.value) ?? reference.value);
+      if (!isCurrent()) return { ok: false, message: t("Card not found. Try scanning again.") };
+      if (!resolved) return { ok: false, message: t("Card not found. Try scanning again.") };
+      uniqueId = resolved.uniqueId;
+    }
+
+    const match = findKioskMatch(uniqueId);
     if (match) {
       setMutationError("");
       setActiveKioskData(match);
       return { ok: true };
     }
 
-    const inspection = await inspectScannedCard(cardId);
+    const inspection = await inspectScannedCard(uniqueId);
+    if (!isCurrent()) return { ok: false, message: t("Card not found. Try scanning again.") };
     if (inspection.status === 'foreign') {
       return { ok: false, message: t("This card is not part of your business.") };
     }
@@ -335,16 +356,17 @@ export const IssuedCardsPage: React.FC<IssuedCardsPageProps> = ({ customers, cam
       if (refreshData) {
         await refreshData();
       }
+      if (!isCurrent()) return { ok: false, message: t("Card not found. Try scanning again.") };
       setSearchParams((prev) => {
         const next = new URLSearchParams(prev);
-        next.set('kiosk', cardId);
+        next.set('kiosk', uniqueId);
         return next;
       }, { replace: true });
       return { ok: true };
     }
 
     return { ok: false, message: t("Card not found. Try scanning again.") };
-  }, [findKioskMatch, refreshData, setSearchParams]);
+  }, [activeBusiness, findKioskMatch, refreshData, setSearchParams, t]);
 
   const flatList = customers.flatMap(c => c.cards.map(card => ({ customer: c, card })));
 
@@ -360,6 +382,7 @@ export const IssuedCardsPage: React.FC<IssuedCardsPageProps> = ({ customers, cam
     (customer.email || "").toLowerCase().includes(normalizedQuery) ||
     (customer.mobile || "").toLowerCase().includes(normalizedQuery) ||
     (card.campaignName || "").toLowerCase().includes(normalizedQuery) ||
+    (card.cardCode || "").toLowerCase().includes(normalizedQuery) ||
     (card.uniqueId || "").toLowerCase().includes(normalizedQuery) ||
     (card.id || "").toLowerCase().includes(normalizedQuery)
   );
@@ -497,7 +520,10 @@ export const IssuedCardsPage: React.FC<IssuedCardsPageProps> = ({ customers, cam
                           {isArchivedCampaign && <Badge variant="outline" className="text-[10px] uppercase tracking-wide">{t("Archived campaign")}</Badge>}
                           {isRedeemed && <span className="rounded bg-gray-200 px-1.5 py-0.5 text-[10px] font-bold uppercase text-gray-600">{t("Redeemed")}</span>}
                         </div>
-                        <p className="mt-1 truncate text-xs font-mono text-muted-foreground">{t("ID:")} {card.uniqueId.slice(0, 8)}</p>
+                        <div className="mt-1 flex items-center gap-1 text-xs font-mono text-muted-foreground">
+                          <span>{t("Card code:")} {card.cardCode ?? t("Unavailable")}</span>
+                          {card.cardCode && <button type="button" aria-label={t("Copy card code")} onClick={() => copyCardCode(card.cardCode)}><Copy size={12} /></button>}
+                        </div>
                       </div>
                     </div>
                     <DropdownMenu>
@@ -600,7 +626,7 @@ export const IssuedCardsPage: React.FC<IssuedCardsPageProps> = ({ customers, cam
                               {isArchivedCampaign && <Badge variant="outline" className="text-[10px] uppercase tracking-wide">{t("Archived campaign")}</Badge>}
                               {isRedeemed && <span className="rounded bg-gray-200 px-1.5 py-0.5 text-[10px] font-bold uppercase text-gray-600">{t("Redeemed")}</span>}
                             </div>
-                            <div className="font-mono text-xs text-muted-foreground">{t("ID:")} {card.uniqueId.slice(0, 8)}</div>
+                            <div className="flex items-center gap-1 font-mono text-xs text-muted-foreground">{t("Card code:")} {card.cardCode ?? t("Unavailable")} {card.cardCode && <button type="button" aria-label={t("Copy card code")} onClick={() => copyCardCode(card.cardCode)}><Copy size={12} /></button>}</div>
                           </div>
                         </div>
                       </TableCell>

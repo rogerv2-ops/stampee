@@ -106,7 +106,7 @@ export const StaffLoginPage: React.FC = () => {
           <label className={labelCls}>{t("PIN")}</label>
           <Input
             value={pin}
-            onChange={(event) => setPin(event.target.value)}
+            onChange={(event) => setPin(event.target.value.replace(/\D/g, "").slice(0, 6))}
             placeholder={t("4-6 digits")}
             className={inputCls}
             type="password"

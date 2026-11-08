@@ -70,6 +70,7 @@ export interface Transaction {
 export interface IssuedCard {
   id: string; // Internal ID
   uniqueId: string; // Public UUID for link
+  cardCode?: string; // Human-facing database-assigned reference code
   campaignId: string | null;
   campaignName: string;
   stamps: number;

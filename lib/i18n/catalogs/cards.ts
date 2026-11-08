@@ -203,6 +203,19 @@ const cards = {
   'Camera': 'Cámara',
   'Music': 'Música',
   'Travel': 'Viajes',
+  'Card code': 'Código de tarjeta',
+  'Card code:': 'Código de tarjeta:',
+  'Code unavailable': 'Código no disponible',
+  'Copy code': 'Copiar código',
+  'Copy card code': 'Copiar código de tarjeta',
+  'Copied': 'Copiado',
+  'Unavailable': 'No disponible',
+  'Card code, UUID, or URL': 'Código de tarjeta, UUID o URL',
+  'Example: 547a-s5a7, UUID, or URL': 'Ejemplo: 547a-s5a7, UUID o URL',
+  'Select a business before opening a card.': 'Selecciona un negocio antes de abrir una tarjeta.',
+  'Unable to assign a card code. Please try again.': 'No se pudo asignar un código de tarjeta. Inténtalo de nuevo.',
+  'Select a business before issuing a card.': 'Selecciona un negocio antes de emitir una tarjeta.',
+  'Business changed. Check the original business for the result.': 'Cambiaste de negocio. Revisa el resultado en el negocio original.',
 } satisfies Record<string, string>;
 
 export default cards;

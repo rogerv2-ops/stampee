@@ -345,12 +345,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!isSupabaseConfigured) {
       return { ok: false, error: CONFIG_ERROR_MESSAGE };
     }
+    const normalizedEmail = email.trim().toLowerCase();
+    const normalizedPin = pin.trim();
+    const normalizedOrgId = orgId.trim();
+    if (!normalizedEmail || !/^\d{4,6}$/.test(normalizedPin) || !normalizedOrgId) {
+      return { ok: false, error: "Email or PIN is incorrect." };
+    }
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
-        email: email.trim().toLowerCase(),
-        password: pin,
+        email: normalizedEmail,
+        password: normalizedPin,
       });
-      if (error) return { ok: false, error: "Email or PIN is incorrect." };
+      if (error) {
+        const authError = error as { code?: string; status?: number; message?: string };
+        const errorCode = (authError.code || "").toLowerCase();
+        const errorMessage = (authError.message || "").toLowerCase();
+        if (errorCode === "invalid_credentials" || errorMessage === "invalid login credentials") {
+          return { ok: false, error: "Email or PIN is incorrect." };
+        }
+        return { ok: false, error: SIGNIN_ERROR_MESSAGE };
+      }
 
       await waitForAuthUser(data.user.id);
       let profile = await fetchProfileWithRetry(data.user.id);
@@ -377,7 +391,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const { data: membership, error: membershipError } = await supabase
         .from("business_memberships")
         .select("business_id, access")
-        .eq("business_id", orgId)
+        .eq("business_id", normalizedOrgId)
         .eq("user_id", profile.id)
         .eq("role", "staff")
         .maybeSingle();
@@ -385,7 +399,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         await supabase.auth.signOut();
         return { ok: false, error: "Org ID doesn't match this staff account." };
       }
-      window.localStorage.setItem(`stampee.active-business:${profile.id}`, orgId);
+      window.localStorage.setItem(`stampee.active-business:${profile.id}`, normalizedOrgId);
       await loadFullSession(data.user.id, data.user);
       return { ok: true, user: profile };
     } catch {

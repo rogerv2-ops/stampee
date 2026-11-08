@@ -287,8 +287,8 @@ export const KioskMode: React.FC<KioskModeProps> = ({
         <div className="md:flex-1 md:overflow-y-auto">
         <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 p-4 sm:p-6 md:gap-6 md:p-8">
             <div className="rounded-[20px] border border-black/5 bg-white/85 px-4 py-3 shadow-[0_18px_45px_-34px_rgba(0,0,0,0.3)] backdrop-blur">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#6b705c]">{t("Card ID") }</p>
-                <p className="mt-1 break-all font-mono text-sm text-[#1d1d1f]">{card.uniqueId}</p>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#6b705c]">{t("Card code") }</p>
+                <p className="mt-1 break-all font-mono text-sm text-[#1d1d1f]">{card.cardCode || t("Code unavailable")}</p>
             </div>
 
             <div className="grid gap-3 md:grid-cols-3">

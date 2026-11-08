@@ -47,6 +47,7 @@ export async function fetchCustomersWithCards(businessId: string): Promise<Custo
       cards.push({
         id: r.id,
         uniqueId: r.unique_id,
+        cardCode: r.card_code ?? undefined,
         campaignId: r.campaign_id ?? null,
         campaignName: r.campaign_name,
         stamps: r.stamps,

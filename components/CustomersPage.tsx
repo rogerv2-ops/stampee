@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useI18n } from "../lib/i18n";
 import {
   Table,
@@ -38,7 +38,9 @@ import { Customer, Template, IssuedCard, Transaction } from '../types';
 import { IssueCardDialog } from './IssueCardDialog';
 import { useAuth } from './AuthProvider';
 import { buildPublicCardUrl } from '../lib/links';
-import { resolveCardTemplate } from '../lib/templateSerialization';
+import { resolveCardTemplate, toStoredTemplate } from '../lib/templateSerialization';
+import { insertIssuedCard, insertTransaction } from '../lib/db/issuedCards';
+import { upsertCustomer } from '../lib/db/customers';
 
 interface CustomersPageProps {
   customers: Customer[];
@@ -59,7 +61,10 @@ const formatPhoneNumber = (value: string) => {
 export const CustomersPage: React.FC<CustomersPageProps> = ({ customers, campaigns, setCustomers }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const { currentUser, currentOwner, activeBusiness } = useAuth();
+  const [mutationError, setMutationError] = useState("");
   const { t, locale } = useI18n();
+  const businessScope = useRef({ id: activeBusiness?.id });
+  if (businessScope.current.id !== activeBusiness?.id) businessScope.current = { id: activeBusiness?.id };
 
   // Dialog States
   const [isIssueOpen, setIsIssueOpen] = useState(false);
@@ -77,6 +82,16 @@ export const CustomersPage: React.FC<CustomersPageProps> = ({ customers, campaig
   const [editFormData, setEditFormData] = useState<{name: string; email: string; mobile: string}>({
     name: '', email: '', mobile: ''
   });
+
+  useEffect(() => {
+    setIsIssueOpen(false);
+    setIsEditOpen(false);
+    setIsStampOpen(false);
+    setIsRedeemOpen(false);
+    setActiveCustomer(null);
+    setActiveCard(null);
+    setMutationError("");
+  }, [activeBusiness?.id]);
 
   const handleMobileChange = (e: React.ChangeEvent<HTMLInputElement>, isEdit: boolean = false) => {
     const input = e.target.value;
@@ -98,7 +113,9 @@ export const CustomersPage: React.FC<CustomersPageProps> = ({ customers, campaig
     setIsIssueOpen(true);
   };
 
-  const handleIssueCard = (campaign: Template, customer: Customer | null, newCustomerData: {name: string, email: string, mobile: string}): IssuedCard => {
+  const handleIssueCard = async (campaign: Template, customer: Customer | null, newCustomerData: {name: string, email: string, mobile: string}): Promise<IssuedCard> => {
+      if (!activeBusiness || !currentOwner) throw new Error(t("Select a business before issuing a card."));
+      const scope = businessScope.current;
       let targetCustomer = customer;
       const actorName = currentUser?.businessName ?? t("Owner");
       const actorRole = currentUser?.role ?? "owner";
@@ -106,60 +123,35 @@ export const CustomersPage: React.FC<CustomersPageProps> = ({ customers, campaig
 
       if (!targetCustomer) {
           const newId = `cust-${Date.now()}`;
-          targetCustomer = {
-              id: newId,
-              name: newCustomerData.name,
-              email: newCustomerData.email,
-              mobile: newCustomerData.mobile,
-              status: "Active",
-              cards: []
-          };
+          targetCustomer = { id: newId, name: newCustomerData.name, email: newCustomerData.email, mobile: newCustomerData.mobile, status: "Active", cards: [] };
+          const customerResult = await upsertCustomer({ id: newId, name: newCustomerData.name, email: newCustomerData.email, mobile: newCustomerData.mobile, status: 'Active' }, activeBusiness.id, currentOwner.id);
+          if (!customerResult.ok) throw new Error(customerResult.error ?? t("Failed to create the customer record."));
       }
 
       const now = new Date();
       const initialTransaction: Transaction = {
-          id: `tx-init-${Date.now()}`,
-          type: 'issued',
-          amount: 0,
-          date: now.toLocaleString(undefined, {
-              month: 'short',
-              day: 'numeric',
-              year: 'numeric',
-              hour: 'numeric',
-              minute: '2-digit',
-              hour12: true
-          }),
-          timestamp: now.getTime(),
-          title: t("Card Issued"),
-          actorName,
-          actorRole,
-          actorId
+          id: `tx-init-${Date.now()}`, type: 'issued', amount: 0,
+          date: now.toLocaleString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }),
+          timestamp: now.getTime(), title: t("Card Issued"), actorName, actorRole, actorId
       };
-
       const newCard: IssuedCard = {
-          id: `card-${Date.now()}`,
-          uniqueId: crypto.randomUUID(),
-          campaignId: campaign.id,
-          campaignName: campaign.name,
-          stamps: 0,
-          lastVisit: new Date().toISOString().split('T')[0],
-          status: 'Active',
-          history: [initialTransaction]
+          id: `card-${Date.now()}`, uniqueId: crypto.randomUUID(), campaignId: campaign.id, campaignName: campaign.name,
+          stamps: 0, lastVisit: new Date().toISOString().split('T')[0], status: 'Active', history: [initialTransaction],
+          templateSnapshot: toStoredTemplate(campaign)
       };
+      const cardResult = await insertIssuedCard({ id: newCard.id, uniqueId: newCard.uniqueId, customerId: targetCustomer.id, campaignId: campaign.id, campaignName: campaign.name, templateSnapshot: toStoredTemplate(campaign) }, activeBusiness.id, currentOwner.id);
+      if (!cardResult.ok || !cardResult.cardCode) throw new Error(cardResult.error ?? t("Unable to assign a card code. Please try again."));
+      newCard.cardCode = cardResult.cardCode;
+      const txResult = await insertTransaction(newCard.id, initialTransaction, activeBusiness.id);
+      if (!txResult.ok) throw new Error(txResult.error ?? t("Failed to record the initial transaction."));
+      if (businessScope.current !== scope) throw new Error(t("Business changed. Check the original business for the result."));
 
-      const targetId = targetCustomer!.id;
-      const customerToAdd = targetCustomer!;
-
+      const targetId = targetCustomer.id;
+      const customerToAdd = targetCustomer;
       setCustomers(prev => {
+          if (businessScope.current !== scope) return prev;
           const exists = prev.find(c => c.id === targetId);
-          if (exists) {
-              return prev.map(c => c.id === targetId
-                  ? { ...c, cards: [...c.cards, newCard] }
-                  : c
-              );
-          } else {
-              return [...prev, { ...customerToAdd, cards: [newCard] }];
-          }
+          return exists ? prev.map(c => c.id === targetId ? { ...c, cards: [...c.cards, newCard] } : c) : [...prev, { ...customerToAdd, cards: [newCard] }];
       });
       return newCard;
   };
@@ -315,6 +307,8 @@ export const CustomersPage: React.FC<CustomersPageProps> = ({ customers, campaig
           onIssue={handleIssueCard}
       />
 
+      {mutationError && <div className="rounded-md border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{mutationError}</div>}
+
       <div className="flex items-center space-x-2 bg-white px-3 py-2 rounded-md border w-full max-w-sm shadow-sm focus-within:ring-2 focus-within:ring-ring">
         <Search className="text-gray-400" size={20} />
         <input
@@ -348,11 +342,14 @@ export const CustomersPage: React.FC<CustomersPageProps> = ({ customers, campaig
                 filteredList.map(({ customer, card }) => (
                 <TableRow key={card.id} className="hover:bg-muted/50 transition-colors">
                     <TableCell>
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-col gap-1">
+                          <div className="flex items-center gap-2">
                             <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs">
                                 {customer.name.substring(0,2).toUpperCase()}
                             </div>
                             <div className="font-semibold">{customer.name}</div>
+                          </div>
+                          <div className="font-mono text-xs text-muted-foreground">{t("Card code:")} {card.cardCode ?? t("Unavailable")}</div>
                         </div>
                     </TableCell>
                     <TableCell>
