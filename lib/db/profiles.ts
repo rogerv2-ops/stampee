@@ -54,19 +54,25 @@ export async function fetchProfileBySlug(slug: string): Promise<User | null> {
   return profileToUser(data);
 }
 
-export async function fetchStaffAccounts(ownerId: string): Promise<User[]> {
+export async function fetchStaffAccounts(businessId: string): Promise<User[]> {
+  const { data: memberships, error: membershipError } = await supabase
+    .from('business_memberships')
+    .select('user_id, access')
+    .eq('business_id', businessId)
+    .eq('role', 'staff');
+  if (membershipError || !memberships?.length) return [];
   const { data, error } = await supabase
     .from('profiles')
     .select('*')
-    .eq('owner_id', ownerId)
-    .eq('role', 'staff');
+    .in('id', memberships.map((membership) => membership.user_id));
   if (error || !data) return [];
-  return data.map(profileToUser);
+  const accessByUser = new Map(memberships.map((membership) => [membership.user_id as string, membership.access as User['access']]));
+  return data.map((row) => ({ ...profileToUser(row), access: accessByUser.get(row.id) ?? 'active' }));
 }
 
 export async function updateProfile(
   userId: string,
-  updates: { business_name?: string; email?: string; slug?: string; status?: string; access?: string; tier?: string; tier_expires_at?: string | null }
+  updates: { email?: string }
 ): Promise<{ ok: boolean; error?: string }> {
   const { error } = await supabase
     .from('profiles')
@@ -78,7 +84,7 @@ export async function updateProfile(
 
 export async function isSlugAvailable(slug: string): Promise<boolean> {
   const { data, error } = await supabase
-    .rpc('is_slug_available', { slug_input: slug });
+    .rpc('is_business_slug_available', { slug_input: slug });
   if (error) return false;
   return data === true;
 }

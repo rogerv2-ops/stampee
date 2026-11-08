@@ -2,9 +2,10 @@ import React from "react";
 import { MailOpen, RefreshCcw } from "lucide-react";
 import { useAuth } from "./AuthProvider";
 import { Button } from "./ui/button";
-import { trackEvent } from "../lib/analytics";
+import { useI18n } from "../lib/i18n";
 
 export const VerifyBanner: React.FC = () => {
+  const { t } = useI18n();
   const { currentOwner, isEmailVerified, resendVerificationEmail, refreshProfile } = useAuth();
   const [resending, setResending] = React.useState(false);
   const [refreshing, setRefreshing] = React.useState(false);
@@ -23,7 +24,6 @@ export const VerifyBanner: React.FC = () => {
       setError(result.error);
       return;
     }
-    trackEvent("Verification Email Resent", { role: currentOwner.role });
     setMessage(result.message ?? "Verification email sent.");
   };
 
@@ -50,13 +50,13 @@ export const VerifyBanner: React.FC = () => {
           </div>
           <div>
             <div className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">
-              Verify to issue cards
+              {t("Verify to issue cards")}
             </div>
             <div className="mt-1 text-base font-semibold text-foreground">
-              Check your inbox and confirm your email before issuing cards.
+              {t("Check your inbox and confirm your email before issuing cards.")}
             </div>
             <div className="mt-1 text-sm text-muted-foreground">
-              If the email is missing, resend it and then refresh this page after you confirm.
+              {t("If the email is missing, resend it and then refresh this page after you confirm.")}
             </div>
           </div>
         </div>
@@ -67,7 +67,7 @@ export const VerifyBanner: React.FC = () => {
             disabled={resending || refreshing}
           >
             <MailOpen className="mr-2" size={18} />
-            {resending ? "Sending..." : "Resend email"}
+            {resending ? t("Sending...") : t("Resend email")}
           </Button>
           <Button
             onClick={handleRefresh}
@@ -76,18 +76,18 @@ export const VerifyBanner: React.FC = () => {
             disabled={resending || refreshing}
           >
             <RefreshCcw className="mr-2" size={18} />
-            {refreshing ? "Refreshing..." : "Refresh status"}
+            {refreshing ? t("Refreshing...") : t("Refresh status")}
           </Button>
         </div>
       </div>
       {message && (
         <div className="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-          {message}
+          {t(message)}
         </div>
       )}
       {error && (
         <div className="mt-4 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-          {error}
+          {t(error)}
         </div>
       )}
     </div>

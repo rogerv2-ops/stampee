@@ -3,6 +3,7 @@ import type { StoredTemplate } from '../../types';
 
 interface CampaignRow {
   id: string;
+  business_id: string;
   owner_id: string;
   name: string;
   is_enabled: boolean;
@@ -34,69 +35,78 @@ export function rowToStoredTemplate(row: CampaignRow): StoredTemplate {
     showLogo: row.show_logo,
     titleSize: row.title_size ?? undefined,
     iconKey: row.icon_key,
-    colors: row.colors as StoredTemplate['colors'],
+    colors: row.colors as unknown as StoredTemplate['colors'],
     totalStamps: row.total_stamps,
     social: row.social as StoredTemplate['social'],
   };
 }
 
-function templateToRow(t: StoredTemplate, ownerId: string) {
+function templateToRow(template: StoredTemplate, businessId: string, ownerId: string) {
   return {
-    id: t.id,
+    id: template.id,
+    business_id: businessId,
     owner_id: ownerId,
-    name: t.name,
-    is_enabled: t.isEnabled ?? true,
-    description: t.description,
-    reward_name: t.rewardName,
-    tagline: t.tagline ?? null,
-    background_image: t.backgroundImage ?? null,
-    background_opacity: t.backgroundOpacity ?? 100,
-    logo_image: t.logoImage ?? null,
-    show_logo: t.showLogo ?? true,
-    title_size: t.titleSize ?? null,
-    icon_key: t.iconKey,
-    colors: t.colors,
-    total_stamps: t.totalStamps,
-    social: t.social ?? null,
+    name: template.name,
+    is_enabled: template.isEnabled ?? true,
+    description: template.description,
+    reward_name: template.rewardName,
+    tagline: template.tagline ?? null,
+    background_image: template.backgroundImage ?? null,
+    background_opacity: template.backgroundOpacity ?? 100,
+    logo_image: template.logoImage ?? null,
+    show_logo: template.showLogo ?? true,
+    title_size: template.titleSize ?? null,
+    icon_key: template.iconKey,
+    colors: template.colors,
+    total_stamps: template.totalStamps,
+    social: template.social ?? null,
   };
 }
 
-export async function fetchCampaigns(ownerId: string): Promise<StoredTemplate[]> {
+export async function fetchCampaigns(businessId: string): Promise<StoredTemplate[]> {
   const { data, error } = await supabase
     .from('campaigns')
     .select('*')
-    .eq('owner_id', ownerId)
+    .eq('business_id', businessId)
     .order('created_at', { ascending: true });
   if (error || !data) return [];
   return data.map((row: CampaignRow) => rowToStoredTemplate(row));
 }
 
-export async function upsertCampaign(template: StoredTemplate, ownerId: string): Promise<{ ok: boolean; error?: string }> {
-  const row = templateToRow(template, ownerId);
+export async function upsertCampaign(
+  template: StoredTemplate,
+  businessId: string,
+  ownerId: string,
+): Promise<{ ok: boolean; error?: string }> {
   const { error } = await supabase
     .from('campaigns')
-    .upsert(row, { onConflict: 'id' });
+    .upsert(templateToRow(template, businessId, ownerId), { onConflict: 'id' });
   if (error) return { ok: false, error: 'Unable to save this campaign right now. Please try again.' };
   return { ok: true };
 }
 
 export async function setCampaignEnabled(
   campaignId: string,
-  ownerId: string,
-  isEnabled: boolean
+  businessId: string,
+  isEnabled: boolean,
 ): Promise<{ ok: boolean; error?: string }> {
   const { error } = await supabase
     .from('campaigns')
     .update({ is_enabled: isEnabled })
     .eq('id', campaignId)
-    .eq('owner_id', ownerId);
+    .eq('business_id', businessId);
   if (error) return { ok: false, error: 'Unable to update this campaign status right now. Please try again.' };
   return { ok: true };
 }
 
-export async function deleteCampaign(campaignId: string): Promise<{ ok: boolean; error?: string }> {
-  const { data, error } = await supabase
-    .rpc('delete_campaign_preserve_cards', { campaign_id_input: campaignId });
+export async function deleteCampaign(
+  campaignId: string,
+  businessId: string,
+): Promise<{ ok: boolean; error?: string }> {
+  const { data, error } = await supabase.rpc('delete_campaign_preserve_cards', {
+    campaign_id_input: campaignId,
+    business_id_input: businessId,
+  });
   if (error) return { ok: false, error: 'Unable to delete this campaign right now. Please try again.' };
   if (typeof data === 'object' && data && 'success' in data && (data as { success?: boolean }).success === false) {
     return { ok: false, error: 'Unable to delete this campaign right now. Please try again.' };
@@ -104,11 +114,10 @@ export async function deleteCampaign(campaignId: string): Promise<{ ok: boolean;
   return { ok: true };
 }
 
-export async function countCampaigns(ownerId: string): Promise<number> {
+export async function countCampaigns(businessId: string): Promise<number> {
   const { count, error } = await supabase
     .from('campaigns')
     .select('*', { count: 'exact', head: true })
-    .eq('owner_id', ownerId);
-  if (error) return 0;
-  return count ?? 0;
+    .eq('business_id', businessId);
+  return error ? 0 : count ?? 0;
 }

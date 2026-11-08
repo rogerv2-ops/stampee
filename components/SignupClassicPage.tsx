@@ -6,12 +6,15 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { useAuth } from "./AuthProvider";
 import { getSlugHint, isSlugValid, normalizeSlug } from "../lib/slug";
+import { useI18n } from "../lib/i18n";
+import { APP_ORIGIN } from "../lib/siteConfig";
 
 const inputCls =
   "h-10 rounded-xl border-black/[0.1] bg-[#f5f5f7] text-[#1d1d1f] placeholder:text-[#6e6e73]/50 focus-visible:border-[#1d1d1f] focus-visible:ring-0";
 const labelCls = "block text-[11px] font-semibold uppercase tracking-[0.16em] text-[#6e6e73]";
 
 export const SignupClassicPage: React.FC = () => {
+  const { t } = useI18n();
   const { currentUser, loading, signup, isSlugAvailable } = useAuth();
   const [businessName, setBusinessName] = useState("");
   const [email, setEmail] = useState("");
@@ -86,14 +89,14 @@ export const SignupClassicPage: React.FC = () => {
   const slugStatusLabel = !normalizedSlug
     ? ""
     : !slugValid
-    ? "Invalid"
+    ? t("Invalid")
     : slugChecking
-    ? "Checking..."
+    ? t("Checking...")
     : slugCheckFailed
-    ? "Check failed"
+    ? t("Check failed")
     : slugAvailable
-    ? "Available"
-    : "Taken";
+    ? t("Available")
+    : t("Taken");
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -131,19 +134,19 @@ export const SignupClassicPage: React.FC = () => {
 
   return (
     <AuthLayout
-      title="Launch in minutes."
+      title={t("Launch in minutes.")}
       subtitle="Set up your brand and launch a loyalty program your customers actually use."
-      badge="Get started"
+      badge={t("Get started")}
       theme="signup"
     >
       <form className="space-y-4" onSubmit={handleSubmit}>
         <div className="mb-2">
-          <h2 className="text-xl font-semibold text-[#1d1d1f]">Create your workspace</h2>
-          <p className="mt-1 text-sm text-[#6e6e73]">Free to start - no credit card required.</p>
+          <h2 className="text-xl font-semibold text-[#1d1d1f]">{t("Create your workspace")}</h2>
+          <p className="mt-1 text-sm text-[#6e6e73]">{t("Free to start - no credit card required.")}</p>
         </div>
 
         <div className="space-y-1.5">
-          <label className={labelCls}>Business name</label>
+          <label className={labelCls}>{t("Business name")}</label>
           <Input
             value={businessName}
             onChange={(e) => setBusinessName(e.target.value)}
@@ -154,7 +157,7 @@ export const SignupClassicPage: React.FC = () => {
         </div>
 
         <div className="space-y-1.5">
-          <label className={labelCls}>Email</label>
+          <label className={labelCls}>{t("Email")}</label>
           <Input
             value={email}
             onChange={(e) => setEmail(e.target.value)}
@@ -167,11 +170,11 @@ export const SignupClassicPage: React.FC = () => {
         </div>
 
         <div className="space-y-1.5">
-          <label className={labelCls}>Password</label>
+          <label className={labelCls}>{t("Password")}</label>
           <Input
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            placeholder="At least 8 characters"
+            placeholder={t("At least 8 characters")}
             className={inputCls}
             type="password"
             autoComplete="new-password"
@@ -181,7 +184,7 @@ export const SignupClassicPage: React.FC = () => {
 
         <div className="space-y-2 rounded-2xl border border-black/[0.07] bg-[#f5f5f7] p-3">
           <div className="flex items-center justify-between">
-            <label className={labelCls}>Your public URL</label>
+            <label className={labelCls}>{t("Your public URL")}</label>
             {normalizedSlug && (
               <span
                 className={`text-[11px] font-semibold ${
@@ -199,7 +202,7 @@ export const SignupClassicPage: React.FC = () => {
 
           <div className="flex items-center gap-2 rounded-xl border border-black/[0.1] bg-white px-4 py-3 focus-within:border-[#1d1d1f]">
             <Link2 className="h-4 w-4 shrink-0 text-[#6e6e73]" />
-            <span className="shrink-0 text-sm font-medium text-[#6e6e73]">stampee.co/</span>
+            <span className="shrink-0 text-sm font-medium text-[#6e6e73]">{APP_ORIGIN.replace(/^https?:\/\//, "")}/</span>
             <input
               value={normalizedSlug}
               onChange={(e) => {
@@ -207,29 +210,29 @@ export const SignupClassicPage: React.FC = () => {
                 setSlugInput(e.target.value);
               }}
               className="min-w-0 flex-1 bg-transparent font-mono text-sm text-[#1d1d1f] outline-none placeholder:text-[#6e6e73]/50"
-              placeholder="yourbrand"
+              placeholder={t("yourbrand")}
               required
             />
           </div>
 
           <p className="text-xs text-[#6e6e73]">
-            {slugHint} Lowercase letters, numbers, and hyphens only.
+            {t(slugHint)} {t("Lowercase letters, numbers, and hyphens only.")}
           </p>
           {slugCheckFailed && (
             <p className="text-xs text-amber-700">
-              Could not verify URL availability right now. You can still continue.
+              {t("Could not verify URL availability right now. You can still continue.")}
             </p>
           )}
         </div>
 
         {error && (
           <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
-            {error}
+            {t(error)}
           </div>
         )}
         {info && (
           <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-            {info}
+            {t(info)}
           </div>
         )}
 
@@ -238,17 +241,17 @@ export const SignupClassicPage: React.FC = () => {
           disabled={isDisabled}
           className="h-11 w-full rounded-full bg-[#1d1d1f] text-sm font-medium text-white shadow-sm hover:bg-black/80 disabled:opacity-40"
         >
-          {isSubmitting ? "Creating..." : "Create Workspace"}
+          {isSubmitting ? t("Creating...") : t("Create Workspace")}
           {!isSubmitting && <ArrowRight className="ml-2 h-4 w-4" />}
         </Button>
         {loading && !busy && (
-          <p className="text-center text-xs text-[#6e6e73]">Checking existing session...</p>
+          <p className="text-center text-xs text-[#6e6e73]">{t("Checking existing session...")}</p>
         )}
 
         <p className="text-center text-sm text-[#6e6e73]">
-          Already have an account?{" "}
+          {t("Already have an account?")} {" "}
           <Link to="/login" className="font-semibold text-[#1d1d1f] underline-offset-2 hover:underline">
-            Log in
+            {t("Log in")}
           </Link>
         </p>
       </form>

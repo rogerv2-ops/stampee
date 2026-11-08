@@ -3,6 +3,7 @@ import type { Customer, IssuedCard, Transaction } from '../../types';
 
 interface CustomerRow {
   id: string;
+  business_id: string;
   owner_id: string;
   name: string;
   email: string;
@@ -21,20 +22,21 @@ function rowToCustomer(row: CustomerRow, cards: IssuedCard[]): Customer {
   };
 }
 
-export async function fetchCustomersWithCards(ownerId: string): Promise<Customer[]> {
+export async function fetchCustomersWithCards(businessId: string): Promise<Customer[]> {
   const { data: customerRows, error: cErr } = await supabase
     .from('customers')
     .select('*')
-    .eq('owner_id', ownerId)
+    .eq('business_id', businessId)
     .order('created_at', { ascending: true });
   if (cErr || !customerRows) return [];
 
   const customerIds = customerRows.map((c: CustomerRow) => c.id);
   if (customerIds.length === 0) return customerRows.map((r: CustomerRow) => rowToCustomer(r, []));
 
-  const { data: cardRows, error: cardErr } = await supabase
+    const { data: cardRows, error: cardErr } = await supabase
     .from('issued_cards')
     .select('*')
+    .eq('business_id', businessId)
     .in('customer_id', customerIds);
 
   const cards: IssuedCard[] = [];
@@ -45,6 +47,7 @@ export async function fetchCustomersWithCards(ownerId: string): Promise<Customer
       cards.push({
         id: r.id,
         uniqueId: r.unique_id,
+        cardCode: r.card_code ?? undefined,
         campaignId: r.campaign_id ?? null,
         campaignName: r.campaign_name,
         stamps: r.stamps,
@@ -61,6 +64,7 @@ export async function fetchCustomersWithCards(ownerId: string): Promise<Customer
     const { data: txRows } = await supabase
       .from('transactions')
       .select('*')
+      .eq('business_id', businessId)
       .in('card_id', cardIds)
       .order('timestamp', { ascending: true });
     if (txRows) {
@@ -103,10 +107,12 @@ export async function fetchCustomersWithCards(ownerId: string): Promise<Customer
 
 export async function upsertCustomer(
   customer: { id: string; name: string; email: string; mobile?: string; status: 'Active' | 'Inactive' },
+  businessId: string,
   ownerId: string
 ): Promise<{ ok: boolean; error?: string; id?: string }> {
   const row = {
     id: customer.id,
+    business_id: businessId,
     owner_id: ownerId,
     name: customer.name,
     email: customer.email,
@@ -120,12 +126,14 @@ export async function upsertCustomer(
 
 export async function updateCustomerStatus(
   customerId: string,
+  businessId: string,
   status: 'Active' | 'Inactive'
 ): Promise<{ ok: boolean; error?: string }> {
   const { error } = await supabase
     .from('customers')
     .update({ status })
-    .eq('id', customerId);
+    .eq('id', customerId)
+    .eq('business_id', businessId);
   if (error) return { ok: false, error: 'Unable to update this customer right now. Please try again.' };
   return { ok: true };
 }

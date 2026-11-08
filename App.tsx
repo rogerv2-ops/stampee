@@ -1,5 +1,4 @@
-import React, { Suspense, lazy, useCallback, useEffect, useState } from 'react';
-import { Analytics } from '@vercel/analytics/react';
+import React, { Suspense, lazy, useCallback, useEffect, useRef, useState } from 'react';
 import { Sidebar, NAV_ITEMS, SidebarContent } from './components/Sidebar';
 import { Template, Customer, IssuedCard } from './types';
 import { templates } from './data/templates';
@@ -19,6 +18,7 @@ import { isSupabaseConfigured, supabase } from './lib/supabase';
 import { useSubscription } from './lib/useSubscription';
 import { SubscriptionProvider } from './components/SubscriptionContext';
 import { APP_ORIGIN } from './lib/siteConfig';
+import { useI18n } from './lib/i18n';
 
 const SITE_ORIGIN = APP_ORIGIN;
 const DEFAULT_SOCIAL_DESCRIPTION = 'Stampee is a digital loyalty card platform for small businesses, including loyalty program for cafes, loyalty program for spa, loyalty program for laundry, loyalty program for carwash, and loyalty program for salons.';
@@ -78,10 +78,20 @@ const TemplatesGallery = lazy(() => import('./components/TemplatesGallery').then
 const TransactionsPage = lazy(() => import('./components/TransactionsPage').then((module) => ({ default: module.TransactionsPage })));
 const AnalyticsPage = lazy(() => import('./components/AnalyticsPage').then((module) => ({ default: module.AnalyticsPage })));
 const LoginPage = lazy(() => import('./components/LoginPage').then((module) => ({ default: module.LoginPage })));
+const SignupPage = lazy(() => import('./components/SignupPage').then((module) => ({ default: module.SignupPage })));
+const SignupConfirmationPage = lazy(() => import('./components/SignupConfirmationPage').then((module) => ({ default: module.SignupConfirmationPage })));
 const StaffLoginPage = lazy(() => import('./components/StaffLoginPage').then((module) => ({ default: module.StaffLoginPage })));
 const SettingsPage = lazy(() => import('./components/SettingsPage').then((module) => ({ default: module.SettingsPage })));
+const BusinessHubPage = lazy(() => import('./components/BusinessHubPage').then((module) => ({ default: module.BusinessHubPage })));
+const LandingPage = lazy(() => import('./components/LandingPage').then((module) => ({ default: module.LandingPage })));
 const ForgotPasswordPage = lazy(() => import('./components/ForgotPasswordPage').then((module) => ({ default: module.ForgotPasswordPage })));
 const DashboardPage = lazy(() => import('./components/DashboardPage').then((module) => ({ default: module.DashboardPage })));
+const ArticlesPage = lazy(() => import('./components/ArticlesPage').then((module) => ({ default: module.ArticlesPage })));
+const PrivacyPolicyPage = lazy(() => import('./components/PrivacyPolicyPage').then((module) => ({ default: module.PrivacyPolicyPage })));
+const CookiePolicyPage = lazy(() => import('./components/CookiePolicyPage').then((module) => ({ default: module.CookiePolicyPage })));
+const TermsPage = lazy(() => import('./components/TermsPage').then((module) => ({ default: module.TermsPage })));
+const GettingStartedArticlePage = lazy(() => import('./components/GettingStartedArticlePage').then((module) => ({ default: module.GettingStartedArticlePage })));
+const ShowcasePage = lazy(() => import('./components/ShowcasePage').then((module) => ({ default: module.ShowcasePage })));
 const PublicCampaignSignupPage = lazy(() => import('./components/PublicCampaignSignupPage').then((module) => ({ default: module.PublicCampaignSignupPage })));
 
 const RouteLoader: React.FC = () => (
@@ -133,19 +143,20 @@ const getSeoForPathname = (pathname: string): SeoConfig => {
 
 const SeoManager: React.FC = () => {
   const location = useLocation();
+  const { t, language } = useI18n();
 
   useEffect(() => {
     const seo = getSeoForPathname(location.pathname);
-    const socialDescription = seo.socialDescription ?? seo.description;
+    const socialDescription = t(seo.socialDescription ?? seo.description);
 
-    document.title = seo.title;
+    document.title = t(seo.title);
     setCanonicalLink(seo.canonical);
-    setMetaTag('name', 'description', seo.description);
+    setMetaTag('name', 'description', t(seo.description));
     setMetaTag('name', 'robots', seo.robots);
-    setMetaTag('property', 'og:locale', 'en_US');
+    setMetaTag('property', 'og:locale', language === 'es' ? 'es_PE' : 'en_US');
     setMetaTag('property', 'og:type', seo.type ?? 'website');
     setMetaTag('property', 'og:site_name', 'Stampee');
-    setMetaTag('property', 'og:title', seo.title);
+    setMetaTag('property', 'og:title', t(seo.title));
     setMetaTag('property', 'og:description', socialDescription);
     setMetaTag('property', 'og:url', seo.canonical);
     setMetaTag('property', 'og:image', DEFAULT_OG_IMAGE);
@@ -154,36 +165,46 @@ const SeoManager: React.FC = () => {
     setMetaTag('property', 'og:image:type', 'image/jpeg');
     setMetaTag('property', 'og:image:width', '1536');
     setMetaTag('property', 'og:image:height', '1024');
-    setMetaTag('property', 'og:image:alt', 'Stampee digital loyalty card preview');
+    setMetaTag('property', 'og:image:alt', t('Stampee digital loyalty card preview'));
     setMetaTag('name', 'twitter:card', 'summary_large_image');
-    setMetaTag('name', 'twitter:title', seo.title);
+    setMetaTag('name', 'twitter:title', t(seo.title));
     setMetaTag('name', 'twitter:description', socialDescription);
     setMetaTag('name', 'twitter:url', seo.canonical);
     setMetaTag('name', 'twitter:image', DEFAULT_OG_IMAGE);
     setMetaTag('name', 'twitter:image:src', DEFAULT_OG_IMAGE);
-    setMetaTag('name', 'twitter:image:alt', 'Stampee digital loyalty card preview');
-  }, [location.pathname]);
+    setMetaTag('name', 'twitter:image:alt', t('Stampee digital loyalty card preview'));
+  }, [location.pathname, t, language]);
 
   return null;
 };
 
 const PublicCardWrapper: React.FC = () => {
+  const { t } = useI18n();
   const { slug, uniqueId } = useParams<{ slug: string; uniqueId: string }>();
   const [loading, setLoading] = useState(true);
   const [cardData, setCardData] = useState<{
     card: IssuedCard;
     customer: Customer;
     template: Template;
+    cardCode?: string;
   } | null>(null);
 
   useEffect(() => {
-    if (!isSupabaseConfigured || !slug || !uniqueId) { setLoading(false); return; }
-    (async () => {
-      const { data, error } = await supabase.rpc('get_public_card', {
-        slug_input: slug,
-        card_unique_id: uniqueId,
-      });
-      if (error || !data) { setLoading(false); return; }
+    let active = true;
+    setLoading(true);
+    setCardData(null);
+    if (!isSupabaseConfigured || !slug || !uniqueId) {
+      setLoading(false);
+      return () => { active = false; };
+    }
+    void (async () => {
+      try {
+        const { data, error } = await supabase.rpc('get_public_card', {
+          slug_input: slug,
+          card_unique_id: uniqueId,
+        });
+        if (!active) return;
+        if (error || !data) { setLoading(false); return; }
 
       const card: IssuedCard = {
         id: data.card.id,
@@ -229,9 +250,13 @@ const PublicCardWrapper: React.FC = () => {
         template = fromStoredTemplate(stored);
       }
 
-      if (template) setCardData({ card, customer, template });
-      setLoading(false);
+        if (active && template) setCardData({ card, customer, template, cardCode: data.card.cardCode });
+        if (active) setLoading(false);
+      } catch {
+        if (active) setLoading(false);
+      }
     })();
+    return () => { active = false; };
   }, [slug, uniqueId]);
 
   if (loading) {
@@ -245,12 +270,12 @@ const PublicCardWrapper: React.FC = () => {
   if (!cardData) {
     return (
       <div className="h-screen flex items-center justify-center px-6 text-center text-muted-foreground">
-        {isSupabaseConfigured ? 'Card not found.' : SERVICE_UNAVAILABLE_MESSAGE}
+        {t(isSupabaseConfigured ? 'Card not found.' : SERVICE_UNAVAILABLE_MESSAGE)}
       </div>
     );
   }
 
-  const { card, customer, template } = cardData;
+  const { card, customer, template, cardCode } = cardData;
   const isRedeemed = card.status === 'Redeemed';
   const cardBackgroundHex = resolveHexAndOpacity(template.colors.background, '#f5f5f5').hex;
   const isDarkBackground = getHexLuminance(cardBackgroundHex) < 0.38;
@@ -283,7 +308,7 @@ const PublicCardWrapper: React.FC = () => {
               readOnly={true}
               currentStamps={card.stamps}
               customerName={customer.name}
-              cardId={card.uniqueId}
+              cardCode={cardCode}
               qrValue={buildStaffScanEntryUrl(slug ?? '', card.uniqueId)}
               className="h-full w-full"
               history={card.history}
@@ -297,10 +322,10 @@ const PublicCardWrapper: React.FC = () => {
               <div className="mx-auto mb-3 h-12 w-12 rounded-full bg-gray-100 flex items-center justify-center">
                 <Lock size={22} className="text-gray-600" />
               </div>
-              <h2 className="text-xl font-bold text-gray-900">Redeemed</h2>
-              <p className="mt-1 text-sm text-gray-600">This card is closed.</p>
+              <h2 className="text-xl font-bold text-gray-900">{t('Redeemed')}</h2>
+              <p className="mt-1 text-sm text-gray-600">{t('This card is closed.')}</p>
               <div className="mt-3 text-xs text-gray-500 font-mono">
-                Card ID: {card.uniqueId}
+                {t('Card code:')} {cardCode || t('Code unavailable')}
               </div>
             </div>
           </div>
@@ -311,9 +336,10 @@ const PublicCardWrapper: React.FC = () => {
 };
 
 const StaffScanEntryWrapper: React.FC = () => {
+  const { t } = useI18n();
   const { slug, uniqueId } = useParams<{ slug: string; uniqueId: string }>();
   const navigate = useNavigate();
-  const { currentOwner, currentUser, loading } = useAuth();
+  const { currentOwner, currentUser, activeBusiness, businesses, switchBusiness, loading } = useAuth();
   const [loadingContext, setLoadingContext] = useState(true);
   const [context, setContext] = useState<Awaited<ReturnType<typeof fetchPublicScanEntryContext>>>(null);
 
@@ -347,12 +373,19 @@ const StaffScanEntryWrapper: React.FC = () => {
       return;
     }
 
-    if (currentOwner.id !== context.owner.id) {
+    if (currentOwner.id !== context.owner.ownerUserId) {
+      return;
+    }
+
+    if (activeBusiness?.id !== context.owner.id) {
+      if (businesses.some((business) => business.id === context.owner.id)) {
+        switchBusiness(context.owner.id);
+      }
       return;
     }
 
     navigate(buildIssuedCardsKioskUrl(context.card.uniqueId), { replace: true });
-  }, [context, currentOwner, currentUser, loading, loadingContext, navigate]);
+  }, [activeBusiness?.id, businesses, context, currentOwner, currentUser, loading, loadingContext, navigate, switchBusiness]);
 
   if (loading || loadingContext) {
     return (
@@ -365,7 +398,7 @@ const StaffScanEntryWrapper: React.FC = () => {
   if (!context) {
     return (
       <div className="h-screen flex items-center justify-center px-6 text-center text-muted-foreground">
-        Card not found.
+        {t('Card not found.')}
       </div>
     );
   }
@@ -373,18 +406,18 @@ const StaffScanEntryWrapper: React.FC = () => {
   if (!currentUser || !currentOwner) {
     return (
       <div className="h-screen flex items-center justify-center px-6 text-center text-muted-foreground">
-        Redirecting to staff login...
+        {t('Redirecting to staff login...')}
       </div>
     );
   }
 
-  if (currentOwner.id !== context.owner.id) {
+  if (currentOwner.id !== context.owner.ownerUserId || activeBusiness?.id !== context.owner.id) {
     return (
       <div className="h-screen flex items-center justify-center bg-background px-6">
         <div className="w-full max-w-md rounded-2xl border bg-card p-6 text-center shadow-sm">
-          <h1 className="text-xl font-semibold text-foreground">Wrong business</h1>
+          <h1 className="text-xl font-semibold text-foreground">{t('Wrong business')}</h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            This card is not part of your business.
+            {t('This card is not part of your business.')}
           </p>
         </div>
       </div>
@@ -393,12 +426,13 @@ const StaffScanEntryWrapper: React.FC = () => {
 
   return (
     <div className="h-screen flex items-center justify-center px-6 text-center text-muted-foreground">
-      Opening kiosk...
+      {t('Opening kiosk...')}
     </div>
   );
 };
 
 const ActiveCardWrapper: React.FC<{ templates: Template[] }> = ({ templates }) => {
+  const { t } = useI18n();
   const { cardId } = useParams<{ cardId: string }>();
   const navigate = useNavigate();
   const template = templates.find(t => t.id === cardId);
@@ -410,7 +444,7 @@ const ActiveCardWrapper: React.FC<{ templates: Template[] }> = ({ templates }) =
       <button
         onClick={() => navigate('/campaigns')}
         className="absolute top-6 left-6 z-50 bg-black/50 text-white rounded-full p-2 hover:bg-black/70 transition-colors backdrop-blur-sm"
-        title="Close"
+        title={t('Close')}
       >
         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
       </button>
@@ -479,6 +513,7 @@ const EditorWrapper: React.FC<{ onSave: (t: Template) => Promise<void>; template
 };
 
 const DashboardLayout: React.FC = () => {
+  const { t } = useI18n();
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
   const location = useLocation();
 
@@ -494,13 +529,13 @@ const DashboardLayout: React.FC = () => {
           <button
             className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-border/80 bg-background shadow-subtle"
             onClick={() => setIsMobileNavOpen(true)}
-            aria-label="Open navigation menu"
+            aria-label={t('Open navigation menu')}
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
               <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
             </svg>
           </button>
-          <div className="text-sm font-semibold">{activeTitle}</div>
+          <div className="text-sm font-semibold">{t(activeTitle)}</div>
           <div className="h-10 w-10" />
         </div>
 
@@ -517,11 +552,11 @@ const DashboardLayout: React.FC = () => {
             isMobileNavOpen ? "translate-x-0" : "-translate-x-full"
           )}>
             <div className="flex items-center justify-between px-4 py-4 border-b">
-              <span className="text-sm font-semibold">Menu</span>
+              <span className="text-sm font-semibold">{t('Menu')}</span>
               <button
                 className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-border/80"
                 onClick={() => setIsMobileNavOpen(false)}
-                aria-label="Close navigation menu"
+                aria-label={t('Close navigation menu')}
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 6l12 12M18 6L6 18" />
@@ -553,50 +588,61 @@ const DashboardLayout: React.FC = () => {
 };
 
 const AppRoutes: React.FC = () => {
-  const { currentOwner, isStaff } = useAuth();
+  const { t } = useI18n();
+  const { currentOwner, activeBusiness, isStaff } = useAuth();
   const [createdCards, setCreatedCards] = useState<Template[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [dataReady, setDataReady] = useState(false);
+  const [loadedBusinessId, setLoadedBusinessId] = useState<string | null>(null);
+  const dataRequestId = useRef(0);
 
-  const sub = useSubscription(createdCards, customers);
+  const visibleCreatedCards = loadedBusinessId === activeBusiness?.id ? createdCards : [];
+  const visibleCustomers = loadedBusinessId === activeBusiness?.id ? customers : [];
+  const sub = useSubscription(visibleCreatedCards, visibleCustomers);
 
-  const loadData = useCallback(async (ownerId: string) => {
+  const loadData = useCallback(async (businessId: string) => {
+    const requestId = ++dataRequestId.current;
     setDataReady(false);
+    setLoadedBusinessId(null);
     const [storedCampaigns, storedCustomers] = await Promise.all([
-      fetchCampaigns(ownerId),
-      fetchCustomersWithCards(ownerId),
+      fetchCampaigns(businessId),
+      fetchCustomersWithCards(businessId),
     ]);
+    if (requestId !== dataRequestId.current) return;
     setCreatedCards(storedCampaigns.map(fromStoredTemplate));
     setCustomers(storedCustomers);
+    setLoadedBusinessId(businessId);
     setDataReady(true);
   }, []);
 
   useEffect(() => {
-    if (!currentOwner) {
+    if (!currentOwner || !activeBusiness) {
+      dataRequestId.current += 1;
       setCreatedCards([]);
       setCustomers([]);
+      setLoadedBusinessId(null);
       setDataReady(true);
       return;
     }
-    void loadData(currentOwner.id);
-  }, [currentOwner?.id, loadData]);
+    void loadData(activeBusiness.id);
+  }, [activeBusiness?.id, loadData]);
 
   const refreshData = useCallback(async () => {
-    if (currentOwner) {
-      await loadData(currentOwner.id);
+    if (activeBusiness) {
+      await loadData(activeBusiness.id);
     }
-  }, [currentOwner, loadData]);
+  }, [activeBusiness, loadData]);
 
   const handleSaveCard = async (template: Template) => {
-    if (!currentOwner) {
-      throw new Error('No active owner account found.');
+    if (!currentOwner || !activeBusiness) {
+      throw new Error('No active business found.');
     }
-    const isNew = !createdCards.find(c => c.id === template.id);
+    const isNew = !visibleCreatedCards.find(c => c.id === template.id);
     const saved = isNew
       ? { ...template, id: `custom-${Date.now()}`, isEnabled: template.isEnabled ?? true }
       : { ...template, isEnabled: template.isEnabled ?? true };
     const stored = toStoredTemplate(saved);
-    const result = await upsertCampaign(stored, currentOwner.id);
+    const result = await upsertCampaign(stored, activeBusiness.id, currentOwner.id);
     if (!result.ok) {
       throw new Error(result.error ?? 'Failed to save the campaign.');
     }
@@ -609,7 +655,7 @@ const AppRoutes: React.FC = () => {
   };
 
   const handleDeleteCard = async (cardId: string) => {
-    const result = await dbDeleteCampaign(cardId);
+    const result = await dbDeleteCampaign(cardId, activeBusiness?.id);
     if (!result.ok) {
       throw new Error(result.error ?? 'Failed to delete the campaign.');
     }
@@ -617,10 +663,10 @@ const AppRoutes: React.FC = () => {
   };
 
   const handleToggleCampaignEnabled = async (cardId: string, isEnabled: boolean) => {
-    if (!currentOwner) {
-      throw new Error('No active owner account found.');
+    if (!currentOwner || !activeBusiness) {
+      throw new Error('No active business found.');
     }
-    const result = await setCampaignEnabled(cardId, currentOwner.id, isEnabled);
+    const result = await setCampaignEnabled(cardId, activeBusiness.id, isEnabled);
     if (!result.ok) {
       throw new Error(result.error ?? 'Failed to update campaign status.');
     }
@@ -631,44 +677,55 @@ const AppRoutes: React.FC = () => {
     <SubscriptionProvider value={sub}>
       {!isSupabaseConfigured && (
         <div className="border-b border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-          {SERVICE_UNAVAILABLE_MESSAGE}
+          {t(SERVICE_UNAVAILABLE_MESSAGE)}
         </div>
       )}
       <Routes>
         {/* Public Routes */}
-        <Route path="/" element={<Navigate to="/login" replace />} />
+        <Route path="/" element={withSuspense(<LandingPage />)} />
+        <Route path="/showcase" element={withSuspense(<ShowcasePage />)} />
+        <Route path="/articles" element={withSuspense(<ArticlesPage />)} />
+        <Route path="/privacy-policy" element={withSuspense(<PrivacyPolicyPage />)} />
+        <Route path="/cookie" element={withSuspense(<CookiePolicyPage />)} />
+        <Route path="/cokkie" element={<Navigate to="/cookie" replace />} />
+        <Route path="/cookie-policy" element={<Navigate to="/cookie" replace />} />
+        <Route path="/terms" element={withSuspense(<TermsPage />)} />
+        <Route path="/articles/getting-started" element={withSuspense(<GettingStartedArticlePage />)} />
         <Route path="/:slug/staff" element={withSuspense(<StaffLoginPage />)} />
         <Route path="/:slug/scan/:uniqueId" element={<StaffScanEntryWrapper />} />
         <Route path="/:slug/join/:campaignId" element={withSuspense(<PublicCampaignSignupPage />)} />
         <Route path="/:slug/:uniqueId" element={<PublicCardWrapper />} />
         <Route path="/login" element={withSuspense(<LoginPage />)} />
+        <Route path="/signup" element={withSuspense(<SignupPage />)} />
+        <Route path="/signup-confirmation" element={withSuspense(<SignupConfirmationPage />)} />
         <Route path="/forgot-password" element={withSuspense(<ForgotPasswordPage />)} />
 
         {/* Authenticated Routes */}
         <Route element={<RequireAuth />}>
           <Route element={<RequireRole allowed={["owner"]} />}>
-            <Route path="/active/:cardId" element={<ActiveCardWrapper templates={createdCards} />} />
+              <Route path="/active/:cardId" element={<ActiveCardWrapper templates={visibleCreatedCards} />} />
             <Route path="/preview/:templateId" element={<PreviewWrapper />} />
-            <Route path="/editor/:id" element={<EditorWrapper onSave={handleSaveCard} templates={createdCards} />} />
+              <Route path="/editor/:id" element={<EditorWrapper onSave={handleSaveCard} templates={visibleCreatedCards} />} />
           </Route>
 
           <Route element={<DashboardLayout />}>
             <Route element={<RequireRole allowed={["owner"]} />}>
+              <Route path="/businesses" element={withSuspense(<BusinessHubPage />)} />
             <Route path="/dashboard" element={
-                withSuspense(<DashboardPage campaigns={createdCards} customers={customers} />)
+                withSuspense(<DashboardPage campaigns={visibleCreatedCards} customers={visibleCustomers} />)
               } />
               <Route path="/campaigns" element={
                 withSuspense(
                   <MyCards
-                    cards={createdCards}
+                    cards={visibleCreatedCards}
                     onDeleteCard={handleDeleteCard}
                     onToggleCampaignEnabled={handleToggleCampaignEnabled}
                   />
                 )
               } />
               <Route path="/gallery" element={withSuspense(<TemplatesGallery />)} />
-              <Route path="/analytics" element={withSuspense(<AnalyticsPage customers={customers} campaigns={createdCards} />)} />
-              <Route path="/transactions" element={withSuspense(<TransactionsPage customers={customers} />)} />
+              <Route path="/analytics" element={withSuspense(<AnalyticsPage customers={visibleCustomers} campaigns={visibleCreatedCards} />)} />
+              <Route path="/transactions" element={withSuspense(<TransactionsPage customers={visibleCustomers} />)} />
               <Route path="/settings" element={withSuspense(<SettingsPage />)} />
             </Route>
 
@@ -676,8 +733,8 @@ const AppRoutes: React.FC = () => {
               <Route path="/issued-cards" element={
                 withSuspense(
                   <IssuedCardsPage
-                    customers={customers}
-                    campaigns={createdCards}
+                    customers={visibleCustomers}
+                    campaigns={visibleCreatedCards}
                     setCustomers={setCustomers}
                     refreshData={refreshData}
                     dataReady={dataReady}
@@ -687,7 +744,7 @@ const AppRoutes: React.FC = () => {
               <Route path="/customers" element={
                 withSuspense(
                   <CustomerDirectory
-                    customers={customers}
+                    customers={visibleCustomers}
                     setCustomers={setCustomers}
                     readOnly={isStaff}
                     refreshData={refreshData}
@@ -709,7 +766,6 @@ const App: React.FC = () => {
     <AuthProvider>
       <BrowserRouter>
         <SeoManager />
-        <Analytics />
         <AppRoutes />
       </BrowserRouter>
     </AuthProvider>

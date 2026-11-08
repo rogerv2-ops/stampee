@@ -12,6 +12,7 @@ import {
   WalletCards,
 } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useI18n } from "../lib/i18n";
 
 type AuthMode = "login" | "signup" | "staff";
 
@@ -176,7 +177,7 @@ const MODE_CONFIG: Record<AuthMode, ThemeConfig> = {
   },
 };
 
-const MobileShowcase: React.FC<{ theme: ThemeConfig }> = ({ theme }) => {
+const MobileShowcase: React.FC<{ theme: ThemeConfig; translate: (source: string) => string }> = ({ theme, translate }) => {
   const AccentIcon = theme.accent.icon;
   const HeroPillIcon = theme.pills[0].icon;
 
@@ -187,19 +188,19 @@ const MobileShowcase: React.FC<{ theme: ThemeConfig }> = ({ theme }) => {
         <div className="absolute left-[-1rem] top-[4.6rem] h-28 w-28 rounded-full bg-white/10 blur-2xl" />
 
         <div className="relative">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/80">{theme.showcaseEyebrow}</p>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/80">{translate(theme.showcaseEyebrow)}</p>
           <h2 className="mt-2 max-w-[12ch] text-[2rem] font-semibold leading-[0.94] tracking-[-0.05em]">
-            {theme.showcaseTitle}
+            {translate(theme.showcaseTitle)}
           </h2>
 
           <div className={`mt-5 max-w-[14rem] rounded-[1.75rem] p-4 ${theme.card.className}`}>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/72">{theme.card.eyebrow}</p>
-            <p className="mt-3 text-lg font-semibold leading-tight">{theme.card.title}</p>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/72">{translate(theme.card.eyebrow)}</p>
+            <p className="mt-3 text-lg font-semibold leading-tight">{translate(theme.card.title)}</p>
           </div>
 
           <div className={`absolute right-0 top-[5.8rem] w-[11.5rem] rounded-[1.7rem] p-4 ${theme.accent.className}`}>
             <AccentIcon className="h-5 w-5" strokeWidth={2} />
-            <p className="mt-4 text-sm font-semibold">{theme.accent.title}</p>
+            <p className="mt-4 text-sm font-semibold">{translate(theme.accent.title)}</p>
           </div>
 
           <div className={`relative mt-4 inline-flex items-center gap-3 rounded-full px-4 py-3 text-sm font-semibold shadow-lg ${theme.pills[0].className}`}>
@@ -212,7 +213,7 @@ const MobileShowcase: React.FC<{ theme: ThemeConfig }> = ({ theme }) => {
   );
 };
 
-const DesktopShowcase: React.FC<{ theme: ThemeConfig }> = ({ theme }) => {
+const DesktopShowcase: React.FC<{ theme: ThemeConfig; translate: (source: string) => string }> = ({ theme, translate }) => {
   const AccentIcon = theme.accent.icon;
   const PrimaryPillIcon = theme.pills[0].icon;
 
@@ -231,23 +232,23 @@ const DesktopShowcase: React.FC<{ theme: ThemeConfig }> = ({ theme }) => {
             <div>
               <div className="flex items-start justify-between gap-4">
                 <div className="rounded-full bg-white/16 px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.22em] text-white/80">
-                  {theme.card.eyebrow}
+                  {translate(theme.card.eyebrow)}
                 </div>
                 <ArrowUpRight className="h-6 w-6 text-white/85" strokeWidth={2.2} />
               </div>
 
               <h2 className="mt-8 max-w-[9ch] text-[3rem] font-semibold leading-[0.94] tracking-[-0.05em]">
-                {theme.card.title}
+                {translate(theme.card.title)}
               </h2>
               <p className="mt-5 max-w-[18rem] text-base leading-7 text-white/76">
-                {theme.card.copy}
+                {translate(theme.card.copy)}
               </p>
             </div>
 
             <div className="space-y-3">
               {theme.card.list.map((item) => (
-                <div key={item} className="rounded-full bg-white/16 px-5 py-3.5 text-sm font-medium text-white/90 backdrop-blur-sm">
-                  {item}
+                <div key={translate(item)} className="rounded-full bg-white/16 px-5 py-3.5 text-sm font-medium text-white/90 backdrop-blur-sm">
+                  {translate(item)}
                 </div>
               ))}
             </div>
@@ -260,11 +261,11 @@ const DesktopShowcase: React.FC<{ theme: ThemeConfig }> = ({ theme }) => {
               <AccentIcon className="h-6 w-6" strokeWidth={2} />
             </div>
             <span className="rounded-full bg-white/14 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-white/80">
-              Featured
+              {translate("Featured")}
             </span>
           </div>
-          <p className="mt-7 text-[1.8rem] font-semibold leading-[1.02] tracking-tight">{theme.accent.title}</p>
-          <p className="mt-3 max-w-[15rem] text-sm leading-6 text-white/78">{theme.accent.copy}</p>
+          <p className="mt-7 text-[1.8rem] font-semibold leading-[1.02] tracking-tight">{translate(theme.accent.title)}</p>
+          <p className="mt-3 max-w-[15rem] text-sm leading-6 text-white/78">{translate(theme.accent.copy)}</p>
         </div>
 
         <div className={`auth-float absolute left-[1%] top-[39%] inline-flex items-center gap-4 rounded-full px-6 py-4 text-[1.1rem] font-semibold shadow-[0_20px_50px_-28px_rgba(0,0,0,0.35)] ${theme.pills[0].className}`}>
@@ -286,8 +287,8 @@ const DesktopShowcase: React.FC<{ theme: ThemeConfig }> = ({ theme }) => {
         <div className={`auth-float-slow absolute bottom-[6%] right-[10%] w-[22rem] rounded-[2.5rem] p-6 ${theme.utility.className}`}>
           <div className="flex items-center justify-between gap-4">
             <div>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.22em] opacity-[0.65]">{theme.utility.title}</p>
-              <p className="mt-3 text-[2rem] font-semibold leading-none">{theme.utility.value}</p>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.22em] opacity-[0.65]">{translate(theme.utility.title)}</p>
+              <p className="mt-3 text-[2rem] font-semibold leading-none">{translate(theme.utility.value)}</p>
             </div>
             <div className="flex h-14 w-14 items-center justify-center rounded-[1.3rem] bg-white/55 text-[#1f1d19]">
               <ChartNoAxesCombined className="h-7 w-7" strokeWidth={2} />
@@ -296,8 +297,8 @@ const DesktopShowcase: React.FC<{ theme: ThemeConfig }> = ({ theme }) => {
 
           <div className="mt-6 space-y-3">
             {theme.utility.rows.map((row) => (
-              <div key={row} className="flex items-center justify-between rounded-full bg-white/45 px-4 py-3 text-sm font-medium">
-                <span>{row}</span>
+              <div key={translate(row)} className="flex items-center justify-between rounded-full bg-white/45 px-4 py-3 text-sm font-medium">
+                <span>{translate(row)}</span>
                 <span className="opacity-[0.45]">{">"}</span>
               </div>
             ))}
@@ -309,11 +310,11 @@ const DesktopShowcase: React.FC<{ theme: ThemeConfig }> = ({ theme }) => {
             const Icon = pill.icon;
             return (
               <div
-                key={pill.label}
+                key={translate(pill.label)}
                 className={`auth-float-slow inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-xs font-semibold shadow-[0_12px_30px_-18px_rgba(0,0,0,0.3)] ${pill.className}`}
               >
                 <Icon className="h-3.5 w-3.5" strokeWidth={2} />
-                <span>{pill.label}</span>
+                <span>{translate(pill.label)}</span>
               </div>
             );
           })}
@@ -331,6 +332,7 @@ export const AuthSplitLayout: React.FC<AuthSplitLayoutProps> = ({
   titleClassName,
   children,
 }) => {
+  const { t: translate } = useI18n();
   const theme = MODE_CONFIG[mode];
 
   return (
@@ -366,25 +368,25 @@ export const AuthSplitLayout: React.FC<AuthSplitLayoutProps> = ({
                 to={theme.navLinkTo}
                 className="inline-flex items-center rounded-full border border-black/10 bg-white/75 px-4 py-2.5 text-sm font-semibold text-[#1d1d1f] transition-colors hover:bg-white"
               >
-                {theme.navLinkLabel}
+                {translate(theme.navLinkLabel)}
               </Link>
             )}
           </header>
 
           <div className="mx-auto flex w-full max-w-[37rem] flex-1 flex-col justify-center py-6 sm:py-8 lg:py-10">
-            <MobileShowcase theme={theme} />
+            <MobileShowcase theme={theme} translate={translate} />
 
             <div className="mt-8 text-center lg:mt-0 lg:text-left">
               {badge && (
                 <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[#736b5e]">
-                  {badge}
+                  {translate(badge)}
                 </p>
               )}
 
               <h1
                 className={`mt-3 text-[clamp(2.8rem,6.5vw,4.8rem)] font-semibold leading-[0.92] tracking-[-0.06em] text-[#171512] ${titleClassName ?? ""}`}
               >
-                {title}
+                {translate(title)}
               </h1>
 
               <p className="mx-auto mt-4 max-w-[34rem] text-base leading-7 text-[#635b4e] sm:text-lg lg:mx-0">
@@ -398,7 +400,7 @@ export const AuthSplitLayout: React.FC<AuthSplitLayoutProps> = ({
           </div>
         </section>
 
-        <DesktopShowcase theme={theme} />
+        <DesktopShowcase theme={theme} translate={translate} />
       </div>
     </div>
   );

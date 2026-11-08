@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import { useI18n } from "../lib/i18n";
 import QrScanner from "qr-scanner";
 import QrScannerWorkerPath from "qr-scanner/qr-scanner-worker.min.js?url";
 import { QrCode } from "lucide-react";
@@ -24,38 +25,39 @@ export const ScanQrDialog: React.FC<ScanQrDialogProps> = ({ isOpen, onClose, onD
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const scannerRef = useRef<QrScanner | null>(null);
   const detectingRef = useRef(false);
-  const [status, setStatus] = useState("Point the camera at the QR code.");
+  const { t, locale } = useI18n();
+  const [status, setStatus] = useState(t("Point the camera at the QR code."));
   const [error, setError] = useState("");
   const [manualValue, setManualValue] = useState("");
-  const isBusy = status === "Requesting camera..." || status === "Checking card...";
+  const isBusy = status === t("Requesting camera...") || status === t("Checking card...");
 
   useEffect(() => {
     if (!isOpen) return;
     detectingRef.current = false;
     setError("");
-    setStatus("Requesting camera...");
+    setStatus(t("Requesting camera..."));
 
     let active = true;
     const handleDetectedValue = async (value: string) => {
       if (!active || detectingRef.current) return;
       detectingRef.current = true;
       setError("");
-      setStatus("Checking card...");
+      setStatus(t("Checking card..."));
 
       try {
         const result = await onDetected(value);
         if (!active) return;
         if (!result.ok) {
           setError(result.message);
-          setStatus("Scanning...");
+          setStatus(t("Scanning..."));
           detectingRef.current = false;
           return;
         }
         onClose();
       } catch {
         if (!active) return;
-        setError("Unable to validate this card right now.");
-        setStatus("Scanning...");
+        setError(t("Unable to validate this card right now."));
+        setStatus(t("Scanning..."));
         detectingRef.current = false;
       }
     };
@@ -63,7 +65,7 @@ export const ScanQrDialog: React.FC<ScanQrDialogProps> = ({ isOpen, onClose, onD
     const startScanner = async () => {
       const hasCamera = await QrScanner.hasCamera();
       if (!hasCamera) {
-        setError("No camera detected on this device.");
+        setError(t("No camera detected on this device."));
         return;
       }
       if (!videoRef.current) return;
@@ -82,11 +84,11 @@ export const ScanQrDialog: React.FC<ScanQrDialogProps> = ({ isOpen, onClose, onD
       scannerRef.current = scanner;
       await scanner.start();
       if (!active) return;
-      setStatus("Scanning...");
+      setStatus(t("Scanning..."));
     };
 
     startScanner().catch(() => {
-      setError("Camera access blocked. Please allow camera permissions.");
+      setError(t("Camera access blocked. Please allow camera permissions."));
     });
 
     return () => {
@@ -101,20 +103,20 @@ export const ScanQrDialog: React.FC<ScanQrDialogProps> = ({ isOpen, onClose, onD
     if (!manualValue.trim() || detectingRef.current) return;
     detectingRef.current = true;
     setError("");
-    setStatus("Checking card...");
+    setStatus(t("Checking card..."));
 
     try {
       const result = await onDetected(manualValue.trim());
       if (!result.ok) {
         setError(result.message);
-        setStatus("Scanning...");
+        setStatus(t("Scanning..."));
         detectingRef.current = false;
         return;
       }
       onClose();
     } catch {
-      setError("Unable to validate this card right now.");
-      setStatus("Scanning...");
+      setError(t("Unable to validate this card right now."));
+      setStatus(t("Scanning..."));
       detectingRef.current = false;
     }
   };
@@ -126,7 +128,7 @@ export const ScanQrDialog: React.FC<ScanQrDialogProps> = ({ isOpen, onClose, onD
           <div className="border-b border-white/10 bg-black px-5 pb-5 pt-8 sm:px-6 lg:px-7">
             <DialogHeader className="relative space-y-4 text-left">
               <DialogTitle className="text-2xl font-bold tracking-tight text-white sm:text-3xl">
-                Scan card
+                {t("Scan card")}
               </DialogTitle>
               <div className="flex flex-wrap items-center gap-3">
                 <div className={cn(
@@ -163,7 +165,7 @@ export const ScanQrDialog: React.FC<ScanQrDialogProps> = ({ isOpen, onClose, onD
               <div className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-3 border-t border-white/10 bg-gradient-to-t from-[#020617] via-[#020617]/92 to-transparent px-4 py-4 text-sm text-white/72 sm:px-5">
                 <div className="flex items-center gap-2">
                   <QrCode size={16} className="text-white" />
-                  <span>QR code</span>
+                  <span>{t("QR code")}</span>
                 </div>
               </div>
             </div>
@@ -176,13 +178,15 @@ export const ScanQrDialog: React.FC<ScanQrDialogProps> = ({ isOpen, onClose, onD
 
             <div className="rounded-[26px] border border-white/10 bg-white/[0.04] p-4 shadow-[0_18px_45px_-34px_rgba(0,0,0,0.5)] sm:p-5">
               <div className="mb-3">
-                <Label className="text-white">Card ID</Label>
+                <Label className="text-white">{t("Card code, UUID, or URL")}</Label>
               </div>
               <div className="flex flex-col gap-3 sm:flex-row">
                 <Input
                   value={manualValue}
                   onChange={(event) => setManualValue(event.target.value)}
-                  placeholder="Paste full card ID"
+                  placeholder={t("Example: 547a-s5a7, UUID, or URL")}
+                  autoCapitalize="off"
+                  spellCheck={false}
                   className="h-12 border-white/10 bg-black/25 font-mono text-sm text-white placeholder:text-white/35"
                 />
                 <Button
@@ -191,7 +195,7 @@ export const ScanQrDialog: React.FC<ScanQrDialogProps> = ({ isOpen, onClose, onD
                   disabled={!manualValue.trim() || detectingRef.current}
                   className="h-12 rounded-full border-white/15 bg-white/8 px-6 text-white hover:bg-white/14"
                 >
-                  Open Card
+                  {t("Open Card")}
                 </Button>
               </div>
             </div>
@@ -202,8 +206,7 @@ export const ScanQrDialog: React.FC<ScanQrDialogProps> = ({ isOpen, onClose, onD
               variant="outline"
               onClick={onClose}
               className="rounded-full border-white/15 bg-white/5 text-white hover:bg-white/12"
-            >
-              Close
+            >{t("Close")}
             </Button>
           </DialogFooter>
         </div>

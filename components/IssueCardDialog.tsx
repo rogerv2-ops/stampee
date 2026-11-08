@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useI18n } from "../lib/i18n";
 import { Customer, IssuedCard, Template, Transaction } from '../types';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "./ui/dialog";
 import { Button } from "./ui/button";
@@ -28,8 +29,9 @@ export const IssueCardDialog: React.FC<IssueCardDialogProps> = ({
     preSelectedCampaign = null,
     preSelectedCustomer = null
 }) => {
-    const { currentOwner } = useAuth();
-    const slug = currentOwner?.slug ?? "";
+    const { activeBusiness } = useAuth();
+    const { t, locale } = useI18n();
+    const slug = activeBusiness?.slug ?? "";
     // State
     const [step, setStep] = useState<'campaign' | 'customer' | 'new-customer' | 'review' | 'success'>('campaign');
     const [searchQuery, setSearchQuery] = useState("");
@@ -118,7 +120,7 @@ export const IssueCardDialog: React.FC<IssueCardDialogProps> = ({
     const handleConfirmIssue = async () => {
         if (!selectedCampaign) return;
         if (selectedCampaign.isEnabled === false) {
-            setSubmitError("This campaign is disabled and cannot issue new cards.");
+            setSubmitError(t("This campaign is disabled and cannot issue new cards."));
             return;
         }
         setSubmitError("");
@@ -131,7 +133,7 @@ export const IssueCardDialog: React.FC<IssueCardDialogProps> = ({
             if (error instanceof Error && error.message) {
                 setSubmitError(error.message);
             } else {
-                setSubmitError("Unable to issue this card right now. Please try again.");
+                setSubmitError(t("Unable to issue this card right now. Please try again."));
             }
         } finally {
             setIssuing(false);
@@ -141,7 +143,7 @@ export const IssueCardDialog: React.FC<IssueCardDialogProps> = ({
     const handleCopyLink = () => {
         if (!publicUrl) return;
         navigator.clipboard.writeText(publicUrl);
-        alert("Link copied to clipboard!");
+        alert(t("Link copied to clipboard!"));
     };
 
     const handleOpenLink = () => {
@@ -155,18 +157,18 @@ export const IssueCardDialog: React.FC<IssueCardDialogProps> = ({
                 {/* Header */}
                 <div className="border-b bg-muted/20 p-4 sm:p-6">
                     <DialogTitle className="text-xl">
-                        {step === 'campaign' && "Select Campaign"}
-                        {step === 'customer' && "Select Customer"}
-                        {step === 'new-customer' && "New Customer Details"}
-                        {step === 'review' && "Review & Issue"}
-                        {step === 'success' && "Card Issued Successfully!"}
+                        {step === 'campaign' && t("Select Campaign")}
+                        {step === 'customer' && t("Select Customer")}
+                        {step === 'new-customer' && t("New Customer Details")}
+                        {step === 'review' && t("Review & Issue")}
+                        {step === 'success' && t("Card Issued Successfully!")}
                     </DialogTitle>
                     <DialogDescription>
-                        {step === 'campaign' && "Choose which loyalty card to issue."}
+                        {step === 'campaign' && t("Choose which loyalty card to issue.")}
                         {step === 'customer' && `Who should receive the "${selectedCampaign?.name}" card?`}
-                        {step === 'new-customer' && "Enter details for the new cardholder."}
-                        {step === 'review' && "Confirm details before issuing."}
-                        {step === 'success' && "Scan the QR code or share the link below."}
+                        {step === 'new-customer' && t("Enter details for the new cardholder.")}
+                        {step === 'review' && t("Confirm details before issuing.")}
+                        {step === 'success' && t("Scan the QR code or share the link below.")}
                     </DialogDescription>
                 </div>
 
@@ -177,10 +179,10 @@ export const IssueCardDialog: React.FC<IssueCardDialogProps> = ({
                         <div className="p-4 space-y-4">
                             <div className="relative">
                                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                                <Input placeholder="Search campaigns..." className="pl-9" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} autoFocus />
+                                <Input placeholder={t("Search campaigns...")} className="pl-9" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} autoFocus />
                             </div>
                             <div className="grid gap-2">
-                                {filteredCampaigns.length === 0 ? <p className="text-center text-sm text-muted-foreground py-8">No campaigns found.</p> :
+                                {filteredCampaigns.length === 0 ? <p className="text-center text-sm text-muted-foreground py-8">{t("No campaigns found.")}</p> :
                                 filteredCampaigns.map(c => (
                                     <button
                                         key={c.id}
@@ -194,7 +196,7 @@ export const IssueCardDialog: React.FC<IssueCardDialogProps> = ({
                                             </div>
                                             <div>
                                                 <p className="font-semibold text-sm">{c.name}</p>
-                                                <p className="text-xs text-muted-foreground">{c.totalStamps} stamps {c.isEnabled === false ? '• Disabled' : ''}</p>
+                                                <p className="text-xs text-muted-foreground">{c.totalStamps} {t("stamps")} {c.isEnabled === false ? `• ${t("Disabled")}` : ""}</p>
                                             </div>
                                         </div>
                                         <ChevronRight size={16} className={`text-muted-foreground transition-opacity ${c.isEnabled === false ? 'opacity-0' : 'opacity-0 group-hover:opacity-100'}`}/>
@@ -214,10 +216,10 @@ export const IssueCardDialog: React.FC<IssueCardDialogProps> = ({
                         <div className="p-4 space-y-4">
                             <div className="relative">
                                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                                <Input placeholder="Search existing customers..." className="pl-9" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} autoFocus />
+                                <Input placeholder={t("Search existing customers...")} className="pl-9" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} autoFocus />
                             </div>
                             <Button variant="outline" className="w-full justify-start gap-2 border-dashed text-primary" onClick={handleCreateNewCustomer}>
-                                <UserPlus size={16} /> Create New Customer "{searchQuery}"
+                                <UserPlus size={16} /> {t("Create New Customer {query}", { query: searchQuery })}
                             </Button>
                             <div className="space-y-1">
                                 {filteredCustomers.slice(0, 10).map(c => (
@@ -233,9 +235,9 @@ export const IssueCardDialog: React.FC<IssueCardDialogProps> = ({
                     {/* STEP 3: NEW CUSTOMER */}
                     {step === 'new-customer' && (
                         <div className="space-y-4 p-4 sm:p-6">
-                            <div className="grid gap-2"><Label>Full Name</Label><Input value={newCustomerData.name} onChange={(e) => setNewCustomerData({...newCustomerData, name: e.target.value})} autoFocus /></div>
-                            <div className="grid gap-2"><Label>Email</Label><Input value={newCustomerData.email} onChange={(e) => setNewCustomerData({...newCustomerData, email: e.target.value})} /></div>
-                            <div className="grid gap-2"><Label>Mobile (Optional)</Label><Input value={newCustomerData.mobile} onChange={(e) => setNewCustomerData({...newCustomerData, mobile: e.target.value})} /></div>
+                            <div className="grid gap-2"><Label>{t("Full Name")}</Label><Input value={newCustomerData.name} onChange={(e) => setNewCustomerData({...newCustomerData, name: e.target.value})} autoFocus /></div>
+                            <div className="grid gap-2"><Label>{t("Email")}</Label><Input value={newCustomerData.email} onChange={(e) => setNewCustomerData({...newCustomerData, email: e.target.value})} /></div>
+                            <div className="grid gap-2"><Label>{t("Mobile (Optional)")}</Label><Input value={newCustomerData.mobile} onChange={(e) => setNewCustomerData({...newCustomerData, mobile: e.target.value})} /></div>
                         </div>
                     )}
 
@@ -243,8 +245,8 @@ export const IssueCardDialog: React.FC<IssueCardDialogProps> = ({
                     {step === 'review' && (
                         <div className="flex h-full flex-col items-center justify-center space-y-6 p-4 text-center sm:p-6">
                             <div className="mb-2 flex h-16 w-16 items-center justify-center rounded-full bg-blue-50 text-blue-600"><CheckCircle2 size={32} /></div>
-                            <div className="w-full space-y-1"><p className="text-sm uppercase tracking-wider text-muted-foreground">Issuing Card</p><div className="text-lg font-bold sm:text-xl">{selectedCampaign?.name}</div></div>
-                            <div className="w-full space-y-1 border-y py-4"><p className="text-sm uppercase tracking-wider text-muted-foreground">To Customer</p><div className="flex items-center justify-center gap-2 text-base font-semibold sm:text-lg"><User size={18} />{selectedCustomer ? selectedCustomer.name : newCustomerData.name}</div></div>
+                            <div className="w-full space-y-1"><p className="text-sm uppercase tracking-wider text-muted-foreground">{t("Issuing Card")}</p><div className="text-lg font-bold sm:text-xl">{selectedCampaign?.name}</div></div>
+                            <div className="w-full space-y-1 border-y py-4"><p className="text-sm uppercase tracking-wider text-muted-foreground">{t("To Customer")}</p><div className="flex items-center justify-center gap-2 text-base font-semibold sm:text-lg"><User size={18} />{selectedCustomer ? selectedCustomer.name : newCustomerData.name}</div></div>
                             {submitError && (
                                 <div className="w-full rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
                                     {submitError}
@@ -257,10 +259,10 @@ export const IssueCardDialog: React.FC<IssueCardDialogProps> = ({
                     {step === 'success' && createdCard && (
                         <div className="flex h-full flex-col items-center justify-center space-y-6 p-4 animate-fade-in sm:p-6">
                             <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-                                <QrCodeDisplay value={publicUrl} label="QR code" className="h-56 w-56 sm:h-72 sm:w-72" />
+                                <QrCodeDisplay value={publicUrl} label={t("QR code")} className="h-56 w-56 sm:h-72 sm:w-72" />
                             </div>
                             <div className="text-center space-y-2 w-full max-w-xs">
-                                <p className="text-sm text-muted-foreground">Scan to access loyalty card</p>
+                                <p className="text-sm text-muted-foreground">{t("Scan to access loyalty card")}</p>
                                 <div className="flex items-center gap-2">
                                     <Input 
                                         readOnly 
@@ -277,28 +279,28 @@ export const IssueCardDialog: React.FC<IssueCardDialogProps> = ({
 
                 {/* Footer */}
                 <div className="flex flex-col gap-2 border-t bg-muted/20 p-4 sm:flex-row sm:items-center sm:justify-between">
-                    {step === 'campaign' && <Button variant="ghost" onClick={onClose}>Cancel</Button>}
+                    {step === 'campaign' && <Button variant="ghost" onClick={onClose}>{t("Cancel")}</Button>}
                     
-                    {step === 'customer' && <Button variant="outline" onClick={() => setStep('campaign')} className="gap-2 sm:w-auto"><ArrowLeft size={16} /> Back</Button>}
+                    {step === 'customer' && <Button variant="outline" onClick={() => setStep('campaign')} className="gap-2 sm:w-auto"><ArrowLeft size={16} /> {t("Back")}</Button>}
                     
                     {step === 'new-customer' && (
                         <>
-                            <Button variant="outline" onClick={() => setStep('customer')} className="gap-2 sm:w-auto" disabled={issuing}><ArrowLeft size={16} /> Back</Button>
-                            <Button onClick={() => setStep('review')} className="sm:w-auto" disabled={!newCustomerData.name}>Review</Button>
+                            <Button variant="outline" onClick={() => setStep('customer')} className="gap-2 sm:w-auto" disabled={issuing}><ArrowLeft size={16} /> {t("Back")}</Button>
+                            <Button onClick={() => setStep('review')} className="sm:w-auto" disabled={!newCustomerData.name}>{t("Review")}</Button>
                         </>
                     )}
 
                     {step === 'review' && (
                         <>
-                            <Button variant="outline" onClick={() => setStep(selectedCustomer ? 'customer' : 'new-customer')} className="gap-2 sm:w-auto" disabled={issuing}><ArrowLeft size={16} /> Back</Button>
+                            <Button variant="outline" onClick={() => setStep(selectedCustomer ? 'customer' : 'new-customer')} className="gap-2 sm:w-auto" disabled={issuing}><ArrowLeft size={16} /> {t("Back")}</Button>
                             <Button onClick={handleConfirmIssue} className="bg-green-600 hover:bg-green-700 sm:w-auto" disabled={issuing}>
-                                {issuing ? "Issuing..." : "Confirm & Issue"}
+                                {issuing ? t("Issuing...") : t("Confirm & Issue")}
                             </Button>
                         </>
                     )}
 
                     {step === 'success' && (
-                        <Button onClick={onClose} className="w-full">Done</Button>
+                        <Button onClick={onClose} className="w-full">{t("Done")}</Button>
                     )}
                 </div>
             </DialogContent>

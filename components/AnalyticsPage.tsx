@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from "react";
+import { useI18n } from "../lib/i18n";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Badge } from "./ui/badge";
 import { Input } from "./ui/input";
@@ -75,16 +76,17 @@ const getDateKey = (date: Date) =>
 const isTimestampInRange = (timestamp: number | undefined, start: number, end: number) =>
   typeof timestamp === "number" && timestamp >= start && timestamp <= end;
 
-const formatDateRangeLabel = (startDate: string, endDate: string) => {
+const formatDateRangeLabel = (startDate: string, endDate: string, t: (source: string, vars?: Record<string, string | number>) => string, locale: string) => {
   const start = parseDateInputToTimestamp(startDate);
   const end = parseDateInputToTimestamp(endDate);
-  if (start === null || end === null) return "Custom range";
-  const startLabel = new Date(start).toLocaleDateString(undefined, { month: "short", day: "numeric" });
-  const endLabel = new Date(end).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  if (start === null || end === null) return t("Custom range");
+  const startLabel = new Date(start).toLocaleDateString(locale, { month: "short", day: "numeric" });
+  const endLabel = new Date(end).toLocaleDateString(locale, { month: "short", day: "numeric" });
   return `${startLabel} - ${endLabel}`;
 };
 
 export const AnalyticsPage: React.FC<AnalyticsPageProps> = ({ customers, campaigns }) => {
+  const { t, language, locale } = useI18n();
   const [startDate, setStartDate] = useState(() => {
     const start = new Date();
     start.setDate(start.getDate() - (DEFAULT_DAY_COUNT - 1));
@@ -127,7 +129,7 @@ export const AnalyticsPage: React.FC<AnalyticsPageProps> = ({ customers, campaig
     return Math.floor((end.getTime() - start.getTime()) / DAY_MS) + 1;
   }, [rangeStart, rangeEnd]);
 
-  const rangeLabel = useMemo(() => formatDateRangeLabel(startDate, endDate), [startDate, endDate]);
+  const rangeLabel = useMemo(() => formatDateRangeLabel(startDate, endDate, t, locale), [startDate, endDate]);
   const allCards = useMemo(() => customers.flatMap((c) => c.cards), [customers]);
   const filteredCards = useMemo(() => {
     return allCards.filter((card) =>
@@ -182,7 +184,7 @@ export const AnalyticsPage: React.FC<AnalyticsPageProps> = ({ customers, campaig
       const date = new Date(start);
       date.setDate(start.getDate() + i);
       days.push({
-        label: date.toLocaleDateString(undefined, { month: "short", day: "numeric" }),
+        label: date.toLocaleDateString(locale, { month: "short", day: "numeric" }),
         stampAdds: 0,
         redemptions: 0,
         total: 0
@@ -320,18 +322,18 @@ export const AnalyticsPage: React.FC<AnalyticsPageProps> = ({ customers, campaig
     <div className="h-full overflow-y-auto flex flex-col space-y-8 bg-background p-6 md:p-8 animate-fade-in">
       <div className="flex flex-col gap-4">
         <div className="space-y-2">
-          <h1 className="text-2xl md:text-4xl font-semibold tracking-tight text-foreground">Analytics</h1>
+          <h1 className="text-2xl md:text-4xl font-semibold tracking-tight text-foreground">{t("Analytics")}</h1>
           <p className="text-sm text-muted-foreground md:text-base">
-            A quick pulse check on loyalty performance and customer activity.
+            {t("A quick pulse check on loyalty performance and customer activity.")}
           </p>
         </div>
         <div className="flex flex-wrap items-end gap-3 rounded-lg border border-border/80 bg-card p-3 shadow-subtle">
           <div className="flex items-center gap-2 pr-1 text-sm text-muted-foreground">
             <CalendarDays className="h-4 w-4" />
-            Date range
+            {t("Date range")}
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">From</label>
+            <label className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{t("From")}</label>
             <Input
               type="date"
               className="h-10 w-[160px]"
@@ -344,7 +346,7 @@ export const AnalyticsPage: React.FC<AnalyticsPageProps> = ({ customers, campaig
             />
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">To</label>
+            <label className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{t("To")}</label>
             <Input
               type="date"
               className="h-10 w-[160px]"
@@ -371,7 +373,7 @@ export const AnalyticsPage: React.FC<AnalyticsPageProps> = ({ customers, campaig
             {rangeLabel}
           </Badge>
           <Badge variant="secondary" className="text-muted-foreground">
-            {Math.max(0, selectedDayCount)} days
+            {Math.max(0, selectedDayCount)} {t("days")}
           </Badge>
         </div>
       </div>
@@ -379,69 +381,69 @@ export const AnalyticsPage: React.FC<AnalyticsPageProps> = ({ customers, campaig
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
         <Card className="border-border/80 bg-card shadow-subtle">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Total Customers</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">{t("Total Customers")}</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-semibold tracking-tight">{formatNumber(filteredCustomerCount)}</div>
-            <p className="mt-1 text-xs text-muted-foreground">Customers with activity in selected range</p>
+            <p className="mt-1 text-xs text-muted-foreground">{t("Customers with activity in selected range")}</p>
           </CardContent>
         </Card>
 
         <Card className="border-border/80 bg-card shadow-subtle">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Cards With Activity</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">{t("Cards With Activity")}</CardTitle>
             <CreditCard className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-semibold tracking-tight">{formatNumber(totals.issued)}</div>
             <p className="mt-1 text-xs text-muted-foreground">
-              {formatNumber(totals.active)} active | {formatNumber(totals.redeemed)} redeemed in range
+              {formatNumber(totals.active)} {t("active")} | {formatNumber(totals.redeemed)} {t("redeemed in range")}
             </p>
           </CardContent>
         </Card>
 
         <Card className="border-border/80 bg-card shadow-subtle">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Redemption Rate</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">{t("Redemption Rate")}</CardTitle>
             <BadgeCheck className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-semibold tracking-tight">{formatPercent(totals.redemptionRate)}%</div>
-            <p className="mt-1 text-xs text-muted-foreground">Completed cycles in selected range</p>
+            <p className="mt-1 text-xs text-muted-foreground">{t("Completed cycles in selected range")}</p>
           </CardContent>
         </Card>
 
         <Card className="border-border/80 bg-card shadow-subtle">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Avg Stamps (Active)</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">{t("Avg Stamps (Active)")}</CardTitle>
             <Sparkles className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-semibold tracking-tight">{formatPercent(totals.avgStamps)}</div>
-            <p className="mt-1 text-xs text-muted-foreground">Momentum across active cards</p>
+            <p className="mt-1 text-xs text-muted-foreground">{t("Momentum across active cards")}</p>
           </CardContent>
         </Card>
 
         <Card className="border-border/80 bg-card shadow-subtle">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Ready To Redeem</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">{t("Ready To Redeem")}</CardTitle>
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-semibold tracking-tight">{formatNumber(totals.readyToRedeem)}</div>
-            <p className="mt-1 text-xs text-muted-foreground">Cards that hit the reward threshold</p>
+            <p className="mt-1 text-xs text-muted-foreground">{t("Cards that hit the reward threshold")}</p>
           </CardContent>
         </Card>
 
         <Card className="border-border/80 bg-card shadow-subtle">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Active Cards</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">{t("Active Cards")}</CardTitle>
             <Activity className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-semibold tracking-tight">{formatNumber(totals.active)}</div>
-            <p className="mt-1 text-xs text-muted-foreground">Currently collecting stamps in selected range</p>
+            <p className="mt-1 text-xs text-muted-foreground">{t("Currently collecting stamps in selected range")}</p>
           </CardContent>
         </Card>
       </div>
@@ -449,8 +451,8 @@ export const AnalyticsPage: React.FC<AnalyticsPageProps> = ({ customers, campaig
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
         <Card className="xl:col-span-2 border-border/80 bg-card shadow-subtle">
           <CardHeader className="pb-2">
-            <CardTitle className="text-lg">Activity Over Time</CardTitle>
-            <p className="text-sm text-muted-foreground">Stamp adds and redemptions combined.</p>
+            <CardTitle className="text-lg">{t("Activity Over Time")}</CardTitle>
+            <p className="text-sm text-muted-foreground">{t("Stamp adds and redemptions combined.")}</p>
           </CardHeader>
           <CardContent className="pt-4">
             <div className="h-56 rounded-lg border border-border/70 bg-muted/30 px-3 pb-3 pt-5">
@@ -477,11 +479,11 @@ export const AnalyticsPage: React.FC<AnalyticsPageProps> = ({ customers, campaig
             <div className="mt-4 flex flex-wrap gap-3 text-xs text-muted-foreground">
               <span className="flex items-center gap-2">
                 <span className="inline-flex h-2 w-2 rounded-full bg-foreground/25" />
-                Activity
+                {t("Activity")}
               </span>
               <span className="flex items-center gap-2">
                 <span className="inline-flex h-2 w-2 rounded-full bg-foreground/80" />
-                Most recent day
+                {t("Most recent day")}
               </span>
             </div>
           </CardContent>
@@ -489,8 +491,8 @@ export const AnalyticsPage: React.FC<AnalyticsPageProps> = ({ customers, campaig
 
         <Card className="border-border/80 bg-card shadow-subtle">
           <CardHeader className="pb-2">
-            <CardTitle className="text-lg">Progress Distribution</CardTitle>
-            <p className="text-sm text-muted-foreground">Active cards by completion.</p>
+            <CardTitle className="text-lg">{t("Progress Distribution")}</CardTitle>
+            <p className="text-sm text-muted-foreground">{t("Active cards by completion.")}</p>
           </CardHeader>
           <CardContent className="space-y-4 pt-4">
             <div className="flex h-3 w-full overflow-hidden rounded-full bg-muted/70">
@@ -525,7 +527,7 @@ export const AnalyticsPage: React.FC<AnalyticsPageProps> = ({ customers, campaig
                 <span className="font-medium">{formatNumber(progressDistribution.mid)}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">Completed</span>
+                <span className="text-muted-foreground">{t("Completed")}</span>
                 <span className="font-medium">{formatNumber(progressDistribution.full)}</span>
               </div>
             </div>
@@ -535,14 +537,14 @@ export const AnalyticsPage: React.FC<AnalyticsPageProps> = ({ customers, campaig
 
       <Card className="border-border/80 bg-card shadow-subtle">
         <CardHeader className="pb-2">
-          <CardTitle className="text-lg">Campaign Performance</CardTitle>
+          <CardTitle className="text-lg">{t("Campaign Performance")}</CardTitle>
           <p className="text-sm text-muted-foreground">
-            Snapshot of active momentum by campaign.
+            {t("Snapshot of active momentum by campaign.")}
           </p>
         </CardHeader>
         <CardContent className="space-y-4 pt-4">
           {campaignStats.length === 0 ? (
-            <div className="text-sm text-muted-foreground">No campaigns found.</div>
+            <div className="text-sm text-muted-foreground">{t("No campaigns found.")}</div>
           ) : (
             campaignStats.map((campaign) => (
               <div key={campaign.id} className="rounded-lg border border-border/80 bg-background px-4 py-4 shadow-subtle">
@@ -550,25 +552,25 @@ export const AnalyticsPage: React.FC<AnalyticsPageProps> = ({ customers, campaig
                   <div>
                     <div className="flex items-center gap-2">
                       <div className="text-sm font-semibold text-foreground">{campaign.name}</div>
-                      {campaign.archived && <Badge variant="outline">Archived</Badge>}
+                      {campaign.archived && <Badge variant="outline">{t("Archived")}</Badge>}
                     </div>
                     <div className="text-xs text-muted-foreground">
-                      {campaign.issued} issued | {campaign.active} active | {campaign.redeemed} redeemed
+                      {campaign.issued} {t("issued")} | {campaign.active} {t("active")} | {campaign.redeemed} {t("redeemed")}
                     </div>
                   </div>
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
                     <span className="rounded-md border border-border/80 bg-card px-2 py-1">
-                      Avg stamps {formatPercent(campaign.avgStamps)}
+                      {t("Avg stamps")} {formatPercent(campaign.avgStamps)}
                     </span>
                     <span className="rounded-md border border-border/80 bg-card px-2 py-1">
-                      {formatPercent(campaign.completionRate)}% redeemed
+                      {formatPercent(campaign.completionRate)}% {t("redeemed")}
                     </span>
                   </div>
                 </div>
                   <div className="mt-3">
                   <div className="mb-2 flex items-center justify-between text-xs text-muted-foreground">
-                    <span>Ready to redeem: {campaign.readyToRedeem}</span>
-                    <span>{campaign.totalStamps === null ? 'Reward threshold unavailable' : `${campaign.totalStamps} stamps to reward`}</span>
+                    <span>{t("Ready to redeem:")} {campaign.readyToRedeem}</span>
+                    <span>{campaign.totalStamps === null ? t("Reward threshold unavailable") : `\${campaign.totalStamps} ${t("stamps to reward")}`}</span>
                   </div>
                   <div className="h-2 overflow-hidden rounded-full bg-muted/70">
                     <div

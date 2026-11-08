@@ -8,6 +8,7 @@ import { Template, Transaction } from '../types';
 import { cn, resolveHexAndOpacity, hexToRgba } from '../lib/utils';
 import { QrCode, History, Gift, Plus, X, Minus, CreditCard, Globe } from 'lucide-react';
 import { siFacebook, siInstagram, siTiktok, siX, siYoutube } from 'simple-icons/icons';
+import { useI18n } from '../lib/i18n';
 
 const LottiePlayer = lazy(() => import('lottie-react'));
 
@@ -21,6 +22,7 @@ interface LoyaltyCardProps {
   className?: string;
   customerName?: string; // For public view
   cardId?: string; // For public view
+  cardCode?: string;
   qrValue?: string;
   sizeVariant?: 'default' | 'compact';
   history?: Transaction[];
@@ -29,16 +31,17 @@ interface LoyaltyCardProps {
   onStampRemoveTap?: () => void;
 }
 
-export const LoyaltyCard: React.FC<LoyaltyCardProps> = ({ 
-    template, 
-    mode, 
+export const LoyaltyCard: React.FC<LoyaltyCardProps> = ({
+    template,
+    mode,
     readOnly = false,
     currentStamps,
-    onBack, 
-    onCreate, 
+    onBack,
+    onCreate,
     className = "",
     customerName,
     cardId,
+    cardCode,
     qrValue,
     sizeVariant = 'default',
     history = [],
@@ -46,16 +49,18 @@ export const LoyaltyCard: React.FC<LoyaltyCardProps> = ({
     onStampAddTap,
     onStampRemoveTap
 }) => {
+  const { t } = useI18n();
   const [stamps, setStamps] = useState<number>(0);
   const [showReward, setShowReward] = useState<boolean>(false);
   const [loadingReward, setLoadingReward] = useState<boolean>(false);
   const [rewardData, setRewardData] = useState<{ code: string; message: string } | null>(null);
   const [giftAnimation, setGiftAnimation] = useState<object | null>(null);
-  
+  const [codeCopied, setCodeCopied] = useState(false);
+
   // Navigation State
   const [currentSlide, setCurrentSlide] = useState<0 | 1>(0);
   const [historyUnlocked, setHistoryUnlocked] = useState(false);
-  
+
   // Refs for scroll handling
   const lastScrollTime = useRef<number>(0);
   const slide2Ref = useRef<HTMLDivElement>(null);
@@ -212,8 +217,8 @@ export const LoyaltyCard: React.FC<LoyaltyCardProps> = ({
         onStampRemoveTap();
         return;
       }
-      setStamps(index); 
-      setRewardData(null); 
+      setStamps(index);
+      setRewardData(null);
     }
   };
 
@@ -225,7 +230,7 @@ export const LoyaltyCard: React.FC<LoyaltyCardProps> = ({
       setRewardData(data);
     } catch (e) {
       console.error(e);
-      setRewardData({ code: "ERROR", message: "Failed to generate reward." });
+      setRewardData({ code: "ERROR", message: t('Failed to generate reward.') });
     } finally {
       setLoadingReward(false);
     }
@@ -256,6 +261,17 @@ export const LoyaltyCard: React.FC<LoyaltyCardProps> = ({
     setRewardData(null);
   };
 
+  const handleCopyCode = async () => {
+    if (!cardCode) return;
+    try {
+      await navigator.clipboard.writeText(cardCode);
+      setCodeCopied(true);
+      window.setTimeout(() => setCodeCopied(false), 1600);
+    } catch {
+      setCodeCopied(false);
+    }
+  };
+
   // --- MOUSE WHEEL HANDLER ---
   const handleWheel = (e: React.WheelEvent<HTMLDivElement>) => {
     if (!historyUnlocked) return;
@@ -267,7 +283,7 @@ export const LoyaltyCard: React.FC<LoyaltyCardProps> = ({
     if (e.deltaY > 50 && currentSlide === 0) {
       setCurrentSlide(1);
       lastScrollTime.current = now;
-    } 
+    }
     // SCROLL UP -> Go to Page 1
     else if (e.deltaY < -50 && currentSlide === 1) {
       // Check if Slide 2 is scrolled to top
@@ -302,18 +318,18 @@ export const LoyaltyCard: React.FC<LoyaltyCardProps> = ({
   };
 
   return (
-    <div 
+    <div
       className={`relative w-full h-full overflow-hidden font-sans select-none ${className}`}
       style={{ backgroundColor: bgHex }}
       onWheel={handleWheel}
     >
       {/* --- STATIC BACKGROUND LAYERS (Shared across slides) --- */}
-      
+
       {/* 1. Background Image Layer */}
       {template.backgroundImage && (
-        <div 
+        <div
           className="absolute inset-0 z-0 bg-cover bg-center transition-all duration-1000"
-          style={{ 
+          style={{
             backgroundImage: `url(${template.backgroundImage})`,
             transform: currentSlide === 1 ? 'scale(1.1)' : 'scale(1)' // Subtle zoom on background change
           }}
@@ -321,45 +337,45 @@ export const LoyaltyCard: React.FC<LoyaltyCardProps> = ({
       )}
 
       {/* 2. Color Overlay Layer */}
-      <div 
+      <div
         className="absolute inset-0 z-0 transition-opacity duration-300"
-        style={{ 
+        style={{
           backgroundColor: bgHex,
-          opacity: template.backgroundImage ? overlayOpacity : 1 
+          opacity: template.backgroundImage ? overlayOpacity : 1
         }}
       />
 
       {/* Doodles */}
       {template.id === 'cookie-classic' && !template.backgroundImage && <BackgroundDoodles />}
-      
+
       {/* --- PREVIEW MODE HEADER --- */}
       {mode === 'preview' && onBack && (
          <div className="absolute top-0 left-0 right-0 p-4 flex justify-between items-center z-50 bg-black/5 backdrop-blur-sm">
            <button onClick={onBack} className="text-sm font-semibold px-4 py-2 bg-white/50 rounded-full hover:bg-white/80 transition-all">
-             ← Templates
+             {t("← Templates")}
            </button>
-           <span className="text-xs uppercase tracking-widest opacity-50 font-bold">Preview Mode</span>
+           <span className="text-xs uppercase tracking-widest opacity-50 font-bold">{t('Preview Mode')}</span>
          </div>
       )}
 
 
       {/* --- SLIDING RAIL CONTAINER --- */}
       {/* Custom cubic-bezier for a "snap" feel, duration 1000ms */}
-      <div 
+      <div
         className="w-full h-[200%] transition-transform duration-1000 ease-[cubic-bezier(0.19,1,0.22,1)] will-change-transform"
         style={{ transform: `translateY(-${currentSlide * 50}%)` }}
       >
-          
+
           {/* --- SLIDE 1: FRONT (Stamps) --- */}
           <div className="w-full h-[50%] relative flex flex-col items-center justify-center p-6">
-            
+
             {/* NEW: Top Header (QR Button Only) */}
             <div className={cn(
                 "absolute top-6 left-6 right-6 flex justify-end items-center z-30 transition-all duration-500",
                 currentSlide === 0 ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4 pointer-events-none"
             )}>
                  {/* Right: QR Trigger */}
-                 <button 
+                 <button
                     onClick={() => {
                       setHistoryUnlocked(true);
                       setCurrentSlide(1);
@@ -368,7 +384,7 @@ export const LoyaltyCard: React.FC<LoyaltyCardProps> = ({
                         "w-10 h-10 rounded-full flex items-center justify-center border shadow-sm bg-white/20 backdrop-blur-md border-white/20",
                         "transition-transform hover:scale-105 active:scale-95 cursor-pointer"
                     )}
-                    aria-label="View Card Details"
+                    aria-label={t("View Card Details")}
                  >
                     <QrCode size={20} className="" style={{ color: textColor.hex }} />
                  </button>
@@ -377,17 +393,17 @@ export const LoyaltyCard: React.FC<LoyaltyCardProps> = ({
             <div className={cn(
                 "relative z-10 w-full max-w-lg flex flex-col items-center transition-all duration-1000 delay-100 ease-out",
                 mode === 'preview' ? 'scale-90' : 'scale-100',
-                currentSlide === 0 
-                  ? "opacity-100 translate-y-0" 
-                  : "opacity-0 -translate-y-12 scale-95" 
+                currentSlide === 0
+                  ? "opacity-100 translate-y-0"
+                  : "opacity-0 -translate-y-12 scale-95"
             )}>
-              
+
               {/* Floating Icon Header (Toggleable) */}
               {(showLogo !== false) && (
                 <div className="mb-6 animate-bounce-short">
-                  <div 
+                  <div
                     className={`
-                      rounded-full shadow-lg ring-4 ring-white/20 
+                      rounded-full shadow-lg ring-4 ring-white/20
                       relative flex items-center justify-center
                       w-24 h-24
                       ${template.logoImage ? 'overflow-hidden p-0' : 'p-5'}
@@ -395,10 +411,10 @@ export const LoyaltyCard: React.FC<LoyaltyCardProps> = ({
                     style={{ backgroundColor: stampInactiveColor.hex }}
                   >
                     {template.logoImage ? (
-                      <img 
-                        src={template.logoImage} 
-                        alt="Brand Logo" 
-                        className="w-full h-full object-cover" 
+                      <img
+                        src={template.logoImage}
+                        alt={t("Brand Logo")}
+                        className="w-full h-full object-cover"
                       />
                     ) : (
                       <Icon size={48} className="" style={{ color: iconActiveColor.hex }} />
@@ -457,7 +473,7 @@ export const LoyaltyCard: React.FC<LoyaltyCardProps> = ({
                   readOnly && !onStampAddTap && !onStampRemoveTap && "pointer-events-none" // Disable interaction in read-only unless tap callbacks are provided
               )}>
                 {Array.from({ length: totalStamps }).map((_, index) => (
-                  <StampSlot 
+                  <StampSlot
                     key={index}
                     index={index}
                     active={index < stamps}
@@ -492,10 +508,10 @@ export const LoyaltyCard: React.FC<LoyaltyCardProps> = ({
               {isCompleted && !isRedeemed && shouldShowRewardModal ? (
                  <div className="mt-3 flex flex-col items-center text-center">
                    <h3 className={cn("text-lg md:text-2xl font-bold text-gray-900 mt-1", isMobileCompleted && "text-base")}>
-                     🎉 Congratulations! 🎉
+                     {t("🎉 Congratulations! 🎉")}
                    </h3>
                    <p className={cn("text-base md:text-lg text-gray-600 leading-snug", isMobileCompleted && "text-sm")}>
-                      Your next <strong>{rewardName}</strong> is free! Please show this to the staff.
+                      {t('Your next')} <strong>{rewardName}</strong> {t('is free! Please show this to the staff.')}
                    </p>
                  </div>
               ) : (
@@ -506,7 +522,7 @@ export const LoyaltyCard: React.FC<LoyaltyCardProps> = ({
                     )}
                     style={{ color: textColor.hex }}
                   >
-                    <p>Reward: {rewardName}</p>
+                    <p>{t('Reward:')} {rewardName}</p>
                   </div>
               )}
 
@@ -539,7 +555,7 @@ export const LoyaltyCard: React.FC<LoyaltyCardProps> = ({
 
           {/* --- SLIDE 2: BACK (Details & QR) - MINIMALIST WHITE --- */}
           {historyUnlocked && (
-            <div 
+            <div
               ref={slide2Ref}
               className="w-full h-[50%] relative flex flex-col items-center bg-white text-gray-900 overflow-y-auto no-scrollbar"
             >
@@ -549,10 +565,10 @@ export const LoyaltyCard: React.FC<LoyaltyCardProps> = ({
                        <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
                            <Icon size={16} className="text-gray-900"/>
                        </div>
-                       <span className="font-bold text-sm tracking-wide uppercase text-gray-500">History</span>
+                       <span className="font-bold text-sm tracking-wide uppercase text-gray-500">{t('History')}</span>
                    </div>
-                   <button 
-                     onClick={() => setCurrentSlide(0)} 
+                   <button
+                     onClick={() => setCurrentSlide(0)}
                      className="p-2 -mr-2 hover:bg-gray-100 rounded-full transition-colors text-gray-400 hover:text-gray-900"
                    >
                        <X size={24} />
@@ -564,7 +580,7 @@ export const LoyaltyCard: React.FC<LoyaltyCardProps> = ({
                   "relative z-10 w-full max-w-sm flex flex-col items-center gap-8 py-8 px-6",
                   mode === 'preview' ? 'scale-90 origin-top' : 'scale-100'
               )}>
-                
+
                 {/* 1. Big QR Code Section */}
                 <div className={cn(
                     "flex flex-col items-center gap-4 w-full transition-all duration-1000 ease-out",
@@ -572,7 +588,7 @@ export const LoyaltyCard: React.FC<LoyaltyCardProps> = ({
                 )}>
                     <div className="relative p-2 rounded-xl border-2 border-gray-100">
                         {qrValue ? (
-                          <QrCodeDisplay value={qrValue} label="Card QR code" className="h-[220px] w-[220px] rounded-lg" />
+                          <QrCodeDisplay value={qrValue} label={t("Card QR code")} className="h-[220px] w-[220px] rounded-lg" />
                         ) : (
                           <>
                             <QrCode size={220} className="text-gray-900" />
@@ -584,18 +600,25 @@ export const LoyaltyCard: React.FC<LoyaltyCardProps> = ({
                           </>
                         )}
                     </div>
-                    {(customerName || cardId) && (
+                    {(customerName || cardCode) && (
                       <div className="text-center space-y-1">
                         {customerName && (
                           <div className="text-sm text-gray-700">
-                            Issued to <span className="font-semibold">{customerName}</span>
+                            {t('Issued to')} <span className="font-semibold">{customerName}</span>
                           </div>
                         )}
-                        {cardId && (
-                          <div className="text-xs text-gray-400 font-mono">
-                            Card ID: {cardId}
-                          </div>
-                        )}
+                        <div className="flex flex-col items-center gap-2 text-xs text-gray-400 font-mono">
+                          <span>{t("Card code:")} {cardCode || t("Code unavailable")}</span>
+                          {cardCode && (
+                            <button
+                              type="button"
+                              onClick={handleCopyCode}
+                              className="rounded-full border border-gray-200 px-3 py-1 font-sans text-[11px] font-semibold text-gray-600 transition-colors hover:bg-gray-50"
+                            >
+                              {codeCopied ? t("Copied") : t("Copy code")}
+                            </button>
+                          )}
+                        </div>
                       </div>
                     )}
                 </div>
@@ -607,21 +630,21 @@ export const LoyaltyCard: React.FC<LoyaltyCardProps> = ({
                 )}>
                     <div className="flex items-center gap-2 mb-4">
                         <History size={16} className="text-gray-400" />
-                        <span className="text-xs font-bold uppercase tracking-wider text-gray-400">Activity Log</span>
+                        <span className="text-xs font-bold uppercase tracking-wider text-gray-400">{t('Activity Log')}</span>
                     </div>
-                    
+
                     <div className="w-full">
                          <div className="w-full p-0 space-y-4">
                             {history.length === 0 ? (
-                                <p className="text-center text-gray-400 text-sm py-4 italic">No activity yet.</p>
+                                <p className="text-center text-gray-400 text-sm py-4 italic">{t('No activity yet.')}</p>
                             ) : (
                                 history.map((tx) => {
                                     const TxIcon = getTransactionIcon(tx.type);
                                     const txColor = getTransactionColor(tx.type);
-                                    
+
                                     return (
-                                        <div 
-                                          key={tx.id} 
+                                        <div
+                                          key={tx.id}
                                           className="flex items-start justify-between group"
                                         >
                                             <div className="flex items-start gap-4">
@@ -667,21 +690,21 @@ export const LoyaltyCard: React.FC<LoyaltyCardProps> = ({
             "absolute bottom-8 left-0 right-0 px-6 flex justify-center z-50 transition-all duration-500",
             currentSlide === 0 ? "opacity-100 translate-y-0 delay-300" : "opacity-0 translate-y-10 pointer-events-none"
         )}>
-           <button 
+           <button
              onClick={onCreate}
              className="shadow-2xl hover:scale-105 active:scale-95 transition-all bg-black text-white px-8 py-4 rounded-full font-bold text-lg flex items-center gap-2"
            >
-             Create <Icon size={20} />
+             {t("Create")} <Icon size={20} />
            </button>
         </div>
       )}
 
       {shouldShowRewardModal && (
         // Public cards and read-only active cards (issued-cards kiosk) should not have a close button.
-        <RewardModal 
-          isOpen={showReward} 
-          loading={loadingReward} 
-          reward={rewardData} 
+        <RewardModal
+          isOpen={showReward}
+          loading={loadingReward}
+          reward={rewardData}
           rewardName={rewardName}
           businessName={template.name}
           showCloseButton={!(mode === 'public' || (mode === 'active' && readOnly))}

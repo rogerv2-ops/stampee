@@ -6,13 +6,15 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { useAuth } from "./AuthProvider";
 import { getSlugHint, isSlugValid, normalizeSlug } from "../lib/slug";
-import { trackEvent } from "../lib/analytics";
+import { APP_ORIGIN } from "../lib/siteConfig";
+import { useI18n } from "../lib/i18n";
 
 const inputCls =
   "h-14 rounded-[1.2rem] border border-black/[0.08] bg-[#f4f1ea] px-4 text-[15px] text-[#171512] shadow-none placeholder:text-[#8a8276] focus-visible:border-black/25 focus-visible:bg-white focus-visible:ring-0";
 const labelCls = "block text-[0.72rem] font-semibold uppercase tracking-[0.18em] text-[#777062]";
 
 export const SignupPage: React.FC = () => {
+  const { t } = useI18n();
   const { currentUser, loading, signup, isSlugAvailable } = useAuth();
   const navigate = useNavigate();
   const [businessName, setBusinessName] = useState("");
@@ -87,14 +89,14 @@ export const SignupPage: React.FC = () => {
   const slugStatusLabel = !normalizedSlug
     ? ""
     : !slugValid
-    ? "Invalid"
+    ? t("Invalid")
     : slugChecking
-    ? "Checking..."
+    ? t("Checking...")
     : slugCheckFailed
-    ? "Check failed"
+    ? t("Check failed")
     : slugAvailable
-    ? "Available"
-    : "Taken";
+    ? t("Available")
+    : t("Taken");
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -108,14 +110,12 @@ export const SignupPage: React.FC = () => {
       return;
     }
     setBusy(true);
-    trackEvent("Signup Submitted", { slug: normalizedSlug });
     try {
       const result = await withTimeout(signup({ businessName, email, password, slug: normalizedSlug }));
       if (!result.ok) {
         setError(result.error);
         return;
       }
-      trackEvent("Signup Success", { slug: normalizedSlug });
       if (result.message) {
         navigate("/signup-confirmation", {
           replace: true,
@@ -138,16 +138,16 @@ export const SignupPage: React.FC = () => {
 
   return (
     <AuthSplitLayout
-      title="Create your workspace"
-      subtitle="Set up your brand, publish your public card link, and launch digital loyalty in minutes."
-      badge="Get started"
+      title={t("Create your workspace")}
+      subtitle={t("Set up your brand, publish your public card link, and launch digital loyalty in minutes.")}
+      badge={t("Get started")}
       mode="signup"
     >
       <form className="space-y-5" onSubmit={handleSubmit}>
-        <p className="text-sm leading-6 text-[#6d6658]">Free to start, no credit card required.</p>
+        <p className="text-sm leading-6 text-[#6d6658]">{t("Free to start, no credit card required.")}</p>
 
         <div className="space-y-1.5">
-          <label className={labelCls}>Business name</label>
+          <label className={labelCls}>{t("Business name")}</label>
           <Input
             value={businessName}
             onChange={(e) => setBusinessName(e.target.value)}
@@ -158,7 +158,7 @@ export const SignupPage: React.FC = () => {
         </div>
 
         <div className="space-y-1.5">
-          <label className={labelCls}>Email</label>
+          <label className={labelCls}>{t("Email")}</label>
           <Input
             value={email}
             onChange={(e) => setEmail(e.target.value)}
@@ -171,11 +171,11 @@ export const SignupPage: React.FC = () => {
         </div>
 
         <div className="space-y-1.5">
-          <label className={labelCls}>Password</label>
+          <label className={labelCls}>{t("Password")}</label>
           <Input
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            placeholder="At least 8 characters"
+            placeholder={t("At least 8 characters")}
             className={inputCls}
             type="password"
             autoComplete="new-password"
@@ -185,7 +185,7 @@ export const SignupPage: React.FC = () => {
 
         <div className="space-y-3 rounded-[1.35rem] border border-black/[0.08] bg-[#f5f1e8] p-4">
           <div className="flex items-center justify-between gap-3">
-            <label className={labelCls}>Your public URL</label>
+            <label className={labelCls}>{t("Your public URL")}</label>
             {normalizedSlug && (
               <span
                 className={`text-[11px] font-semibold ${
@@ -203,7 +203,7 @@ export const SignupPage: React.FC = () => {
 
           <div className="flex items-center gap-2 rounded-[1.2rem] border border-black/[0.08] bg-white px-4 py-3.5 focus-within:border-black/25">
             <Link2 className="h-4 w-4 shrink-0 text-[#777062]" />
-            <span className="shrink-0 text-sm font-medium text-[#777062]">stampee.co/</span>
+            <span className="shrink-0 text-sm font-medium text-[#777062]">{APP_ORIGIN.replace(/^https?:\/\//, "")}/</span>
             <input
               value={normalizedSlug}
               onChange={(e) => {
@@ -211,24 +211,24 @@ export const SignupPage: React.FC = () => {
                 setSlugInput(e.target.value);
               }}
               className="min-w-0 flex-1 bg-transparent font-mono text-sm text-[#171512] outline-none placeholder:text-[#8a8276]"
-              placeholder="yourbrand"
+              placeholder={t("yourbrand")}
               required
             />
           </div>
 
           <p className="text-xs leading-6 text-[#6d6658]">
-            {slugHint} Lowercase letters, numbers, and hyphens only.
+            {t(slugHint)} {t("Lowercase letters, numbers, and hyphens only.")}
           </p>
           {slugCheckFailed && (
             <p className="text-xs leading-6 text-amber-700">
-              Could not verify URL availability right now. You can still continue.
+              {t("Could not verify URL availability right now. You can still continue.")}
             </p>
           )}
         </div>
 
         {error && (
           <div className="rounded-[1.2rem] border border-red-200 bg-red-50/90 px-4 py-3 text-sm text-red-600">
-            {error}
+            {t(error)}
           </div>
         )}
         <Button
@@ -236,17 +236,17 @@ export const SignupPage: React.FC = () => {
           disabled={isDisabled}
           className="h-14 w-full rounded-[1.2rem] bg-[#1b1813] text-base font-semibold text-white shadow-none hover:bg-[#11100d] disabled:opacity-40"
         >
-          {isSubmitting ? "Creating..." : "Create Workspace"}
+          {isSubmitting ? t("Creating...") : t("Create Workspace")}
           {!isSubmitting && <ArrowRight className="ml-2 h-4 w-4" />}
         </Button>
         {loading && !busy && (
-          <p className="text-center text-xs text-[#777062]">Checking existing session...</p>
+          <p className="text-center text-xs text-[#777062]">{t("Checking existing session...")}</p>
         )}
 
         <p className="text-center text-sm text-[#6d6658]">
-          Already have an account?{" "}
+          {t("Already have an account?")} {" "}
           <Link to="/login" className="font-semibold text-[#171512] underline-offset-2 hover:underline">
-            Log in
+            {t("Log in")}
           </Link>
         </p>
       </form>

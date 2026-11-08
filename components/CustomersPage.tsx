@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { useI18n } from "../lib/i18n";
 import {
   Table,
   TableBody,
@@ -27,17 +28,19 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
-import { 
-    MoreHorizontal, Plus, Search, Trash, Edit, Phone, Mail, Stamp, 
-    CreditCard, Minus, Gift, ExternalLink, ArrowLeft, UserPlus, 
-    CheckCircle2, User, ChevronRight 
+import {
+    MoreHorizontal, Plus, Search, Trash, Edit, Phone, Mail, Stamp,
+    CreditCard, Minus, Gift, ExternalLink, ArrowLeft, UserPlus,
+    CheckCircle2, User, ChevronRight
 } from "lucide-react";
 import { cn } from "../lib/utils";
 import { Customer, Template, IssuedCard, Transaction } from '../types';
 import { IssueCardDialog } from './IssueCardDialog';
 import { useAuth } from './AuthProvider';
 import { buildPublicCardUrl } from '../lib/links';
-import { resolveCardTemplate } from '../lib/templateSerialization';
+import { resolveCardTemplate, toStoredTemplate } from '../lib/templateSerialization';
+import { insertIssuedCard, insertTransaction } from '../lib/db/issuedCards';
+import { upsertCustomer } from '../lib/db/customers';
 
 interface CustomersPageProps {
   customers: Customer[];
@@ -57,8 +60,12 @@ const formatPhoneNumber = (value: string) => {
 
 export const CustomersPage: React.FC<CustomersPageProps> = ({ customers, campaigns, setCustomers }) => {
   const [searchQuery, setSearchQuery] = useState("");
-  const { currentUser, currentOwner } = useAuth();
-  
+  const { currentUser, currentOwner, activeBusiness } = useAuth();
+  const [mutationError, setMutationError] = useState("");
+  const { t, locale } = useI18n();
+  const businessScope = useRef({ id: activeBusiness?.id });
+  if (businessScope.current.id !== activeBusiness?.id) businessScope.current = { id: activeBusiness?.id };
+
   // Dialog States
   const [isIssueOpen, setIsIssueOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
@@ -68,7 +75,7 @@ export const CustomersPage: React.FC<CustomersPageProps> = ({ customers, campaig
   // Single Action State
   const [activeCustomer, setActiveCustomer] = useState<Customer | null>(null);
   const [activeCard, setActiveCard] = useState<IssuedCard | null>(null);
-  
+
   const [mobileError, setMobileError] = useState<string>("");
 
   // Edit Form State
@@ -76,17 +83,27 @@ export const CustomersPage: React.FC<CustomersPageProps> = ({ customers, campaig
     name: '', email: '', mobile: ''
   });
 
+  useEffect(() => {
+    setIsIssueOpen(false);
+    setIsEditOpen(false);
+    setIsStampOpen(false);
+    setIsRedeemOpen(false);
+    setActiveCustomer(null);
+    setActiveCard(null);
+    setMutationError("");
+  }, [activeBusiness?.id]);
+
   const handleMobileChange = (e: React.ChangeEvent<HTMLInputElement>, isEdit: boolean = false) => {
     const input = e.target.value;
     const formatted = formatPhoneNumber(input);
     const digits = formatted.replace(/[^\d]/g, '');
-    
+
     if (isEdit) {
         setEditFormData({ ...editFormData, mobile: formatted });
     }
 
     if (digits.length > 0 && digits.length < 10) {
-        setMobileError("Enter 10 digits");
+        setMobileError(t("Enter 10 digits"));
     } else {
         setMobileError("");
     }
@@ -96,68 +113,45 @@ export const CustomersPage: React.FC<CustomersPageProps> = ({ customers, campaig
     setIsIssueOpen(true);
   };
 
-  const handleIssueCard = (campaign: Template, customer: Customer | null, newCustomerData: {name: string, email: string, mobile: string}): IssuedCard => {
+  const handleIssueCard = async (campaign: Template, customer: Customer | null, newCustomerData: {name: string, email: string, mobile: string}): Promise<IssuedCard> => {
+      if (!activeBusiness || !currentOwner) throw new Error(t("Select a business before issuing a card."));
+      const scope = businessScope.current;
       let targetCustomer = customer;
-      const actorName = currentUser?.businessName ?? "Owner";
+      const actorName = currentUser?.businessName ?? t("Owner");
       const actorRole = currentUser?.role ?? "owner";
       const actorId = currentUser?.id;
 
       if (!targetCustomer) {
           const newId = `cust-${Date.now()}`;
-          targetCustomer = {
-              id: newId,
-              name: newCustomerData.name,
-              email: newCustomerData.email,
-              mobile: newCustomerData.mobile,
-              status: "Active",
-              cards: []
-          };
+          targetCustomer = { id: newId, name: newCustomerData.name, email: newCustomerData.email, mobile: newCustomerData.mobile, status: "Active", cards: [] };
+          const customerResult = await upsertCustomer({ id: newId, name: newCustomerData.name, email: newCustomerData.email, mobile: newCustomerData.mobile, status: 'Active' }, activeBusiness.id, currentOwner.id);
+          if (!customerResult.ok) throw new Error(customerResult.error ?? t("Failed to create the customer record."));
       }
 
       const now = new Date();
       const initialTransaction: Transaction = {
-          id: `tx-init-${Date.now()}`,
-          type: 'issued',
-          amount: 0,
-          date: now.toLocaleString(undefined, { 
-              month: 'short', 
-              day: 'numeric', 
-              year: 'numeric', 
-              hour: 'numeric', 
-              minute: '2-digit', 
-              hour12: true 
-          }),
-          timestamp: now.getTime(),
-          title: "Card Issued",
-          actorName,
-          actorRole,
-          actorId
+          id: `tx-init-${Date.now()}`, type: 'issued', amount: 0,
+          date: now.toLocaleString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }),
+          timestamp: now.getTime(), title: t("Card Issued"), actorName, actorRole, actorId
       };
-
       const newCard: IssuedCard = {
-          id: `card-${Date.now()}`,
-          uniqueId: crypto.randomUUID(),
-          campaignId: campaign.id,
-          campaignName: campaign.name,
-          stamps: 0,
-          lastVisit: new Date().toISOString().split('T')[0],
-          status: 'Active',
-          history: [initialTransaction]
+          id: `card-${Date.now()}`, uniqueId: crypto.randomUUID(), campaignId: campaign.id, campaignName: campaign.name,
+          stamps: 0, lastVisit: new Date().toISOString().split('T')[0], status: 'Active', history: [initialTransaction],
+          templateSnapshot: toStoredTemplate(campaign)
       };
+      const cardResult = await insertIssuedCard({ id: newCard.id, uniqueId: newCard.uniqueId, customerId: targetCustomer.id, campaignId: campaign.id, campaignName: campaign.name, templateSnapshot: toStoredTemplate(campaign) }, activeBusiness.id, currentOwner.id);
+      if (!cardResult.ok || !cardResult.cardCode) throw new Error(cardResult.error ?? t("Unable to assign a card code. Please try again."));
+      newCard.cardCode = cardResult.cardCode;
+      const txResult = await insertTransaction(newCard.id, initialTransaction, activeBusiness.id);
+      if (!txResult.ok) throw new Error(txResult.error ?? t("Failed to record the initial transaction."));
+      if (businessScope.current !== scope) throw new Error(t("Business changed. Check the original business for the result."));
 
-      const targetId = targetCustomer!.id;
-      const customerToAdd = targetCustomer!;
-
+      const targetId = targetCustomer.id;
+      const customerToAdd = targetCustomer;
       setCustomers(prev => {
+          if (businessScope.current !== scope) return prev;
           const exists = prev.find(c => c.id === targetId);
-          if (exists) {
-              return prev.map(c => c.id === targetId
-                  ? { ...c, cards: [...c.cards, newCard] }
-                  : c
-              );
-          } else {
-              return [...prev, { ...customerToAdd, cards: [newCard] }];
-          }
+          return exists ? prev.map(c => c.id === targetId ? { ...c, cards: [...c.cards, newCard] } : c) : [...prev, { ...customerToAdd, cards: [newCard] }];
       });
       return newCard;
   };
@@ -166,7 +160,7 @@ export const CustomersPage: React.FC<CustomersPageProps> = ({ customers, campaig
 
   const handleEditSave = () => {
     if (mobileError || !activeCustomer) return;
-    const updatedCustomers = customers.map(c => 
+    const updatedCustomers = customers.map(c =>
         c.id === activeCustomer.id ? { ...c, ...editFormData } : c
     );
     setCustomers(updatedCustomers);
@@ -179,36 +173,36 @@ export const CustomersPage: React.FC<CustomersPageProps> = ({ customers, campaig
 
     const campaign = resolveCardTemplate(activeCard, campaigns);
     const maxStamps = campaign ? campaign.totalStamps : 10;
-    
+
     let newStamps = reset ? 0 : activeCard.stamps + amount;
-    if (newStamps > maxStamps) return; 
-    if (newStamps < 0) return; 
+    if (newStamps > maxStamps) return;
+    if (newStamps < 0) return;
 
     // Create transaction
     const now = new Date();
     const txType = reset ? 'redeem' : (amount > 0 ? 'stamp_add' : 'stamp_remove');
-    const txTitle = reset ? 'Reward Redeemed' : (amount > 0 ? 'Stamp Collected' : 'Stamp Removed');
+    const txTitle = reset ? t("Reward Redeemed") : (amount > 0 ? t("Stamp Collected") : t("Stamp Removed"));
     const newTransaction: Transaction = {
         id: `tx-${Date.now()}`,
         type: txType,
         amount: reset ? 0 : amount,
-        date: now.toLocaleString(undefined, { 
-            month: 'short', 
-            day: 'numeric', 
-            year: 'numeric', 
-            hour: 'numeric', 
-            minute: '2-digit', 
-            hour12: true 
+        date: now.toLocaleString(undefined, {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true
         }),
         timestamp: now.getTime(),
         title: txTitle,
-        actorName: currentUser?.businessName ?? "Owner",
+        actorName: currentUser?.businessName ?? t("Owner"),
         actorRole: currentUser?.role ?? "owner",
         actorId: currentUser?.id
     };
 
-    const updatedCard = { 
-        ...activeCard, 
+    const updatedCard = {
+        ...activeCard,
         stamps: newStamps,
         lastVisit: new Date().toISOString().split('T')[0],
         history: [newTransaction, ...activeCard.history] // Prepend new transaction
@@ -245,24 +239,24 @@ export const CustomersPage: React.FC<CustomersPageProps> = ({ customers, campaig
             id: `tx-${Date.now()}`,
             type: 'stamp_remove',
             amount: -1,
-            date: now.toLocaleString(undefined, { 
-                month: 'short', 
-                day: 'numeric', 
-                year: 'numeric', 
-                hour: 'numeric', 
-                minute: '2-digit', 
-                hour12: true 
+            date: now.toLocaleString(undefined, {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric',
+                hour: 'numeric',
+                minute: '2-digit',
+                hour12: true
             }),
             timestamp: now.getTime(),
-            title: 'Stamp Removed',
-            remarks: 'Manual correction',
-            actorName: currentUser?.businessName ?? "Owner",
+            title: t("Stamp Removed"),
+            remarks: t("Manual correction"),
+            actorName: currentUser?.businessName ?? t("Owner"),
             actorRole: currentUser?.role ?? "owner",
             actorId: currentUser?.id
         };
 
-        const updatedCard = { 
-            ...card, 
+        const updatedCard = {
+            ...card,
             stamps: card.stamps - 1,
             history: [newTransaction, ...card.history]
         };
@@ -287,8 +281,8 @@ export const CustomersPage: React.FC<CustomersPageProps> = ({ customers, campaig
 
   // Flatten logic
   const flatList = customers.flatMap(c => c.cards.map(card => ({ customer: c, card })));
-  const filteredList = flatList.filter(({ customer, card }) => 
-    customer.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+  const filteredList = flatList.filter(({ customer, card }) =>
+    customer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     customer.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
     card.campaignName.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -297,15 +291,15 @@ export const CustomersPage: React.FC<CustomersPageProps> = ({ customers, campaig
     <div className="p-8 space-y-6 animate-fade-in h-full flex flex-col">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-            <h1 className="text-3xl font-bold tracking-tight">Issued Cards</h1>
-            <p className="text-muted-foreground">Manage active cards across all campaigns.</p>
+            <h1 className="text-3xl font-bold tracking-tight">{t("Issued Cards")}</h1>
+            <p className="text-muted-foreground">{t("Manage active cards across all campaigns.")}</p>
         </div>
         <Button onClick={openIssueWizard} className="gap-2 shadow-sm">
-            <Plus size={16} /> Issue New Card
+            <Plus size={16} /> {t("Issue New Card")}
         </Button>
       </div>
 
-       <IssueCardDialog 
+       <IssueCardDialog
           isOpen={isIssueOpen}
           onClose={() => setIsIssueOpen(false)}
           campaigns={campaigns}
@@ -313,11 +307,13 @@ export const CustomersPage: React.FC<CustomersPageProps> = ({ customers, campaig
           onIssue={handleIssueCard}
       />
 
+      {mutationError && <div className="rounded-md border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{mutationError}</div>}
+
       <div className="flex items-center space-x-2 bg-white px-3 py-2 rounded-md border w-full max-w-sm shadow-sm focus-within:ring-2 focus-within:ring-ring">
         <Search className="text-gray-400" size={20} />
-        <input 
-            className="flex-1 outline-none text-sm bg-transparent placeholder:text-muted-foreground" 
-            placeholder="Search by name, email, or campaign..." 
+        <input
+            className="flex-1 outline-none text-sm bg-transparent placeholder:text-muted-foreground"
+            placeholder={t("Search by name, email, or campaign...")}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
         />
@@ -327,11 +323,11 @@ export const CustomersPage: React.FC<CustomersPageProps> = ({ customers, campaig
         <Table>
           <TableHeader>
             <TableRow className="bg-muted/50">
-              <TableHead>Cardholder</TableHead>
-              <TableHead>Campaign</TableHead>
-              <TableHead>Contact</TableHead>
-              <TableHead className="text-right">Balance</TableHead>
-              <TableHead className="text-right">Last Visit</TableHead>
+              <TableHead>{t("Cardholder")}</TableHead>
+              <TableHead>{t("Campaign")}</TableHead>
+              <TableHead>{t("Contact")}</TableHead>
+              <TableHead className="text-right">{t("Balance")}</TableHead>
+              <TableHead className="text-right">{t("Last Visit")}</TableHead>
               <TableHead className="w-[50px]"></TableHead>
             </TableRow>
           </TableHeader>
@@ -339,18 +335,21 @@ export const CustomersPage: React.FC<CustomersPageProps> = ({ customers, campaig
             {filteredList.length === 0 ? (
                 <TableRow>
                     <TableCell colSpan={6} className="text-center h-24 text-muted-foreground">
-                        No issued cards found.
+                        {t("No issued cards found.")}
                     </TableCell>
                 </TableRow>
             ) : (
                 filteredList.map(({ customer, card }) => (
                 <TableRow key={card.id} className="hover:bg-muted/50 transition-colors">
                     <TableCell>
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-col gap-1">
+                          <div className="flex items-center gap-2">
                             <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs">
                                 {customer.name.substring(0,2).toUpperCase()}
                             </div>
                             <div className="font-semibold">{customer.name}</div>
+                          </div>
+                          <div className="font-mono text-xs text-muted-foreground">{t("Card code:")} {card.cardCode ?? t("Unavailable")}</div>
                         </div>
                     </TableCell>
                     <TableCell>
@@ -377,52 +376,52 @@ export const CustomersPage: React.FC<CustomersPageProps> = ({ customers, campaig
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                                 <Button variant="ghost" className="h-8 w-8 p-0 hover:bg-muted">
-                                    <span className="sr-only">Open menu</span>
+                                    <span className="sr-only">{t("Open menu")}</span>
                                     <MoreHorizontal className="h-4 w-4" />
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="w-48">
-                                <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                <DropdownMenuLabel>{t("Actions")}</DropdownMenuLabel>
                                 <DropdownMenuItem onClick={() => {
-                                    const slug = currentOwner?.slug;
+                                    const slug = activeBusiness?.slug;
                                     if (!slug) return;
                                     window.open(buildPublicCardUrl(slug, card.uniqueId), '_blank');
                                 }} className="cursor-pointer">
-                                    <ExternalLink className="mr-2 h-4 w-4" /> Public View
+                                    <ExternalLink className="mr-2 h-4 w-4" /> {t("Public View")}
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
-                                <DropdownMenuItem 
-                                    onClick={() => { setActiveCustomer(customer); setActiveCard(card); setIsStampOpen(true); }} 
+                                <DropdownMenuItem
+                                    onClick={() => { setActiveCustomer(customer); setActiveCard(card); setIsStampOpen(true); }}
                                     className="cursor-pointer font-medium text-green-600 focus:text-green-600"
                                 >
-                                    <Plus className="mr-2 h-4 w-4" /> Add Stamp
+                                    <Plus className="mr-2 h-4 w-4" /> {t("Add Stamp")}
                                 </DropdownMenuItem>
-                                <DropdownMenuItem 
-                                    onClick={() => handleRemoveStamp(customer, card)} 
-                                    className="cursor-pointer text-orange-600 focus:text-orange-600" 
+                                <DropdownMenuItem
+                                    onClick={() => handleRemoveStamp(customer, card)}
+                                    className="cursor-pointer text-orange-600 focus:text-orange-600"
                                     disabled={card.stamps === 0}
                                 >
-                                    <Minus className="mr-2 h-4 w-4" /> Remove Stamp
+                                    <Minus className="mr-2 h-4 w-4" /> {t("Remove Stamp")}
                                 </DropdownMenuItem>
-                                <DropdownMenuItem 
-                                    onClick={() => { setActiveCustomer(customer); setActiveCard(card); setIsRedeemOpen(true); }} 
+                                <DropdownMenuItem
+                                    onClick={() => { setActiveCustomer(customer); setActiveCard(card); setIsRedeemOpen(true); }}
                                     className="cursor-pointer font-medium text-purple-600 focus:text-purple-600"
                                 >
-                                    <Gift className="mr-2 h-4 w-4" /> Redeem Reward
+                                    <Gift className="mr-2 h-4 w-4" /> {t("Redeem Reward")}
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
-                                <DropdownMenuItem 
-                                    onClick={() => { 
-                                        setActiveCustomer(customer); 
-                                        setEditFormData({ name: customer.name, email: customer.email, mobile: customer.mobile || '' }); 
-                                        setIsEditOpen(true); 
-                                    }} 
+                                <DropdownMenuItem
+                                    onClick={() => {
+                                        setActiveCustomer(customer);
+                                        setEditFormData({ name: customer.name, email: customer.email, mobile: customer.mobile || '' });
+                                        setIsEditOpen(true);
+                                    }}
                                     className="cursor-pointer"
                                 >
-                                    <Edit className="mr-2 h-4 w-4" /> Edit Profile
+                                    <Edit className="mr-2 h-4 w-4" /> {t("Edit Profile")}
                                 </DropdownMenuItem>
                                 <DropdownMenuItem className="text-red-600 focus:text-red-600 cursor-pointer" onClick={() => handleDeleteCard(customer.id, card.id)}>
-                                    <Trash className="mr-2 h-4 w-4" /> Revoke Card
+                                    <Trash className="mr-2 h-4 w-4" /> {t("Revoke Card")}
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>
@@ -438,36 +437,36 @@ export const CustomersPage: React.FC<CustomersPageProps> = ({ customers, campaig
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
         <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
-                <DialogTitle>Edit Profile</DialogTitle>
-                <DialogDescription>Update contact details for {activeCustomer?.name}.</DialogDescription>
+                <DialogTitle>{t("Edit Profile")}</DialogTitle>
+                <DialogDescription>{t("Update contact details for {name}.", { name: activeCustomer?.name ?? "" })}</DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
                 <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="edit-name" className="text-right">Name</Label>
-                    <Input 
-                        id="edit-name" 
-                        value={editFormData.name} 
-                        onChange={(e) => setEditFormData({...editFormData, name: e.target.value})} 
-                        className="col-span-3" 
+                    <Label htmlFor="edit-name" className="text-right">{t("Name")}</Label>
+                    <Input
+                        id="edit-name"
+                        value={editFormData.name}
+                        onChange={(e) => setEditFormData({...editFormData, name: e.target.value})}
+                        className="col-span-3"
                     />
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="edit-email" className="text-right">Email</Label>
-                    <Input 
-                        id="edit-email" 
-                        value={editFormData.email} 
-                        onChange={(e) => setEditFormData({...editFormData, email: e.target.value})} 
-                        className="col-span-3" 
+                    <Label htmlFor="edit-email" className="text-right">{t("Email")}</Label>
+                    <Input
+                        id="edit-email"
+                        value={editFormData.email}
+                        onChange={(e) => setEditFormData({...editFormData, email: e.target.value})}
+                        className="col-span-3"
                     />
                 </div>
                 <div className="grid grid-cols-4 items-start gap-4">
-                    <Label htmlFor="edit-mobile" className="text-right mt-3">Mobile</Label>
+                    <Label htmlFor="edit-mobile" className="text-right mt-3">{t("Mobile")}</Label>
                     <div className="col-span-3 space-y-1">
-                        <Input 
-                            id="edit-mobile" 
+                        <Input
+                            id="edit-mobile"
                             placeholder="(555) 000-0000"
-                            value={editFormData.mobile} 
-                            onChange={(e) => handleMobileChange(e, true)} 
+                            value={editFormData.mobile}
+                            onChange={(e) => handleMobileChange(e, true)}
                             className={cn(mobileError && "border-red-500 focus-visible:ring-red-500")}
                         />
                         {mobileError && <p className="text-[10px] text-red-500 ml-1">{mobileError}</p>}
@@ -475,8 +474,8 @@ export const CustomersPage: React.FC<CustomersPageProps> = ({ customers, campaig
                 </div>
             </div>
             <DialogFooter>
-                <Button variant="outline" onClick={() => setIsEditOpen(false)}>Cancel</Button>
-                <Button onClick={handleEditSave} disabled={!!mobileError}>Save Changes</Button>
+                <Button variant="outline" onClick={() => setIsEditOpen(false)}>{t("Cancel")}</Button>
+                <Button onClick={handleEditSave} disabled={!!mobileError}>{t("Save Changes")}</Button>
             </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -485,8 +484,8 @@ export const CustomersPage: React.FC<CustomersPageProps> = ({ customers, campaig
        <Dialog open={isStampOpen} onOpenChange={setIsStampOpen}>
         <DialogContent className="sm:max-w-[400px]">
             <DialogHeader>
-                <DialogTitle>Add Stamp</DialogTitle>
-                <DialogDescription>Record a purchase for {activeCustomer?.name}?</DialogDescription>
+                <DialogTitle>{t("Add Stamp")}</DialogTitle>
+                <DialogDescription>{t("Record a purchase for {name}?", { name: activeCustomer?.name ?? "" })}</DialogDescription>
             </DialogHeader>
             <div className="flex flex-col items-center justify-center py-8 gap-6">
                 <div className="relative">
@@ -498,7 +497,7 @@ export const CustomersPage: React.FC<CustomersPageProps> = ({ customers, campaig
                      </div>
                 </div>
                 <div className="text-center space-y-1">
-                    <p className="text-sm text-muted-foreground uppercase tracking-wider font-semibold">New Balance</p>
+                    <p className="text-sm text-muted-foreground uppercase tracking-wider font-semibold">{t("New Balance")}</p>
                     <div className="text-4xl font-bold flex items-center justify-center gap-3">
                          <span className="text-muted-foreground/30">{activeCard?.stamps}</span>
                          <span className="text-muted-foreground/30">→</span>
@@ -507,8 +506,8 @@ export const CustomersPage: React.FC<CustomersPageProps> = ({ customers, campaig
                 </div>
             </div>
             <DialogFooter>
-                <Button variant="outline" onClick={() => setIsStampOpen(false)}>Cancel</Button>
-                <Button onClick={handleAddStamp} className="gap-2"><Stamp size={16}/> Confirm Stamp</Button>
+                <Button variant="outline" onClick={() => setIsStampOpen(false)}>{t("Cancel")}</Button>
+                <Button onClick={handleAddStamp} className="gap-2"><Stamp size={16}/> {t("Confirm Stamp")}</Button>
             </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -517,21 +516,21 @@ export const CustomersPage: React.FC<CustomersPageProps> = ({ customers, campaig
       <Dialog open={isRedeemOpen} onOpenChange={setIsRedeemOpen}>
         <DialogContent className="sm:max-w-[400px]">
             <DialogHeader>
-                <DialogTitle>Redeem Reward</DialogTitle>
-                <DialogDescription>Deduct all stamps for reward?</DialogDescription>
+                <DialogTitle>{t("Redeem Reward")}</DialogTitle>
+                <DialogDescription>{t("Deduct all stamps for reward?")}</DialogDescription>
             </DialogHeader>
             <div className="flex flex-col items-center justify-center py-6 gap-6">
                 <div className="w-20 h-20 rounded-full bg-purple-50 flex items-center justify-center text-purple-600 border-4 border-purple-100">
                     <Gift size={32} />
                 </div>
                 <p className="text-center text-sm text-muted-foreground px-6">
-                    This will reset the <strong>{activeCard?.campaignName}</strong> stamp balance to 0.
+                    {t("This will reset the {name} stamp balance to 0.", { name: activeCard?.campaignName ?? "" })}
                 </p>
             </div>
             <DialogFooter>
-                <Button variant="outline" onClick={() => setIsRedeemOpen(false)}>Cancel</Button>
+                <Button variant="outline" onClick={() => setIsRedeemOpen(false)}>{t("Cancel")}</Button>
                 <Button onClick={handleRedeemReward} className="gap-2 bg-purple-600 hover:bg-purple-700 text-white">
-                    <Gift size={16}/> Confirm Redemption
+                    <Gift size={16}/> {t("Confirm Redemption")}
                 </Button>
             </DialogFooter>
         </DialogContent>

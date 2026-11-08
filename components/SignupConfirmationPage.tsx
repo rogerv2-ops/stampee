@@ -4,12 +4,14 @@ import { CheckCircle2, MailCheck } from "lucide-react";
 import { useAuth } from "./AuthProvider";
 import { Button } from "./ui/button";
 import PublicFooter from "./PublicFooter";
+import { useI18n } from "../lib/i18n";
 
 type LocationState = {
   email?: string;
 };
 
 export const SignupConfirmationPage: React.FC = () => {
+  const { t } = useI18n();
   const { currentUser, loading } = useAuth();
   const location = useLocation();
   const state = location.state as LocationState | null;
@@ -47,7 +49,7 @@ export const SignupConfirmationPage: React.FC = () => {
             to="/login"
             className="inline-flex items-center rounded-full border border-black/10 bg-white/80 px-4 py-2 text-sm font-semibold text-[#1d1d1f] transition-colors hover:bg-white"
           >
-            Go to login
+            {t("Go to login")}
           </Link>
         </header>
 
@@ -57,16 +59,16 @@ export const SignupConfirmationPage: React.FC = () => {
               <MailCheck className="h-7 w-7" strokeWidth={2.1} />
             </div>
 
-            <p className="mt-6 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#7b7264]">Signup successful</p>
+            <p className="mt-6 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#7b7264]">{t("Signup successful")}</p>
             <h1 className="mt-3 max-w-[15ch] text-[clamp(2.2rem,5vw,4rem)] font-semibold leading-[0.94] tracking-[-0.04em] text-[#171512]">
-              Confirm your email to finish setup.
+              {t("Confirm your email to finish setup.")}
             </h1>
             <p className="mt-5 max-w-[42rem] text-base leading-7 text-[#5f584b] sm:text-lg">
-              We sent a confirmation link to your email. Open it to activate your account, then return and log in.
+              {t("We sent a confirmation link to your email. Open it to activate your account, then return and log in.")}
             </p>
             {email && (
               <p className="mt-3 text-sm font-medium text-[#4a4338]">
-                Sent to <span className="font-semibold">{email}</span>
+                {t("Sent to")} <span className="font-semibold">{email}</span>
               </p>
             )}
 
@@ -82,7 +84,7 @@ export const SignupConfirmationPage: React.FC = () => {
                 >
                   <div className="flex items-start gap-2">
                     <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-[#7d6339]" />
-                    <span>{step}</span>
+                    <span>{t(step)}</span>
                   </div>
                 </div>
               ))}
@@ -93,14 +95,14 @@ export const SignupConfirmationPage: React.FC = () => {
                 asChild
                 className="h-12 rounded-[1rem] bg-[#1b1813] px-6 text-base font-semibold text-white shadow-none hover:bg-[#11100d]"
               >
-                <Link to="/login">Go to Login</Link>
+                <Link to="/login">{t("Go to Login")}</Link>
               </Button>
               <Button
                 asChild
                 variant="outline"
                 className="h-12 rounded-[1rem] border-black/[0.1] bg-white px-6 text-base font-semibold text-[#171512] shadow-none hover:bg-[#f8f5ef]"
               >
-                <Link to="/">Back to Home</Link>
+                <Link to="/">{t("Back to Home")}</Link>
               </Button>
             </div>
           </section>
