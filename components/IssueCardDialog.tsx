@@ -28,8 +28,8 @@ export const IssueCardDialog: React.FC<IssueCardDialogProps> = ({
     preSelectedCampaign = null,
     preSelectedCustomer = null
 }) => {
-    const { currentOwner } = useAuth();
-    const slug = currentOwner?.slug ?? "";
+    const { activeBusiness } = useAuth()
+    const slug = activeBusiness?.slug ?? "";
     // State
     const [step, setStep] = useState<'campaign' | 'customer' | 'new-customer' | 'review' | 'success'>('campaign');
     const [searchQuery, setSearchQuery] = useState("");

@@ -354,7 +354,7 @@ const BACKGROUND_FILE_ACCEPT = '.jpg,.jpeg,.png,.webp,image/jpeg,image/png,image
 
 export const CardEditor: React.FC<CardEditorProps> = ({ initialTemplate, onSave }) => {
   const navigate = useNavigate();
-  const { currentOwner } = useAuth();
+  const { activeBusiness } = useAuth();
   const [template, setTemplate] = useState<Template>(initialTemplate);
   const [saveBusy, setSaveBusy] = useState(false);
   const [saveError, setSaveError] = useState("");
@@ -538,7 +538,7 @@ export const CardEditor: React.FC<CardEditorProps> = ({ initialTemplate, onSave 
 
   const handleAssetUpload = async (kind: CampaignAssetKind, file: File | null) => {
     if (!file) return;
-    if (!currentOwner?.id) {
+    if (!activeBusiness?.id) {
       setUploadError(kind, 'You must be signed in as the account owner to upload images.');
       return;
     }
@@ -550,7 +550,7 @@ export const CardEditor: React.FC<CardEditorProps> = ({ initialTemplate, onSave 
     try {
       const uploaded = await uploadCampaignAsset({
         file,
-        ownerId: currentOwner.id,
+        businessId: activeBusiness.id,
         kind,
       });
 

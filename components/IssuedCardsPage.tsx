@@ -35,7 +35,7 @@ interface IssuedCardsPageProps {
 export const IssuedCardsPage: React.FC<IssuedCardsPageProps> = ({ customers, campaigns, setCustomers, refreshData, dataReady = false }) => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [searchQuery, setSearchQuery] = useState("");
-  const { currentOwner, isEmailVerified, isStaff, currentUser } = useAuth();
+  const { currentOwner, activeBusiness, isEmailVerified, isStaff, currentUser } = useAuth();
   useSubscriptionContext();
   const canIssue = isEmailVerified;
   const [mutationBusy, setMutationBusy] = useState(false);
@@ -66,9 +66,13 @@ export const IssuedCardsPage: React.FC<IssuedCardsPageProps> = ({ customers, cam
   }, [campaigns, customers]);
 
   const handleUpdateCard = async (customerId: string, cardId: string, updates: Partial<IssuedCard>) => {
+    if (!activeBusiness) {
+      setMutationError("Select a business before updating this card.");
+      return;
+    }
     setMutationBusy(true);
     setMutationError("");
-    const dbUpdates: Parameters<typeof updateIssuedCard>[1] = {};
+    const dbUpdates: Parameters<typeof updateIssuedCard>[2] = {};
     if (updates.stamps !== undefined) dbUpdates.stamps = updates.stamps;
     if (updates.status !== undefined) dbUpdates.status = updates.status;
     if (updates.completedDate !== undefined) dbUpdates.completedDate = updates.completedDate;
@@ -77,7 +81,7 @@ export const IssuedCardsPage: React.FC<IssuedCardsPageProps> = ({ customers, cam
     let wroteData = false;
     try {
       if (Object.keys(dbUpdates).length > 0) {
-        const updateResult = await updateIssuedCard(cardId, dbUpdates);
+        const updateResult = await updateIssuedCard(cardId, activeBusiness.id, dbUpdates);
         if (!updateResult.ok) {
           throw new Error(updateResult.error ?? "Failed to update the card.");
         }
@@ -91,7 +95,7 @@ export const IssuedCardsPage: React.FC<IssuedCardsPageProps> = ({ customers, cam
         const existingIds = new Set((existingCard?.history ?? []).map(t => t.id));
         const newTxs = updates.history.filter(t => !existingIds.has(t.id));
         for (const tx of newTxs) {
-          const txResult = await insertTransaction(cardId, tx);
+          const txResult = await insertTransaction(cardId, tx, activeBusiness.id);
           if (!txResult.ok) {
             throw new Error(txResult.error ?? "Failed to record the card activity.");
           }
@@ -127,11 +131,15 @@ export const IssuedCardsPage: React.FC<IssuedCardsPageProps> = ({ customers, cam
   };
 
   const handleRevokeCard = async (customerId: string, cardId: string) => {
+    if (!activeBusiness) {
+      setMutationError("Select a business before revoking this card.");
+      return;
+    }
     if (confirm("Are you sure you want to revoke this card? This cannot be undone.")) {
       setMutationBusy(true);
       setMutationError("");
       try {
-        const result = await deleteIssuedCard(cardId);
+        const result = await deleteIssuedCard(cardId, activeBusiness.id);
         if (!result.ok) {
           throw new Error(result.error ?? "Failed to revoke the card.");
         }
@@ -193,7 +201,7 @@ export const IssuedCardsPage: React.FC<IssuedCardsPageProps> = ({ customers, cam
       };
       const customerResult = await upsertCustomer(
         { id: newId, name: newCustomerData.name, email: newCustomerData.email, mobile: newCustomerData.mobile, status: 'Active' },
-        currentOwner.id
+        activeBusiness.id, currentOwner.id
       );
       if (!customerResult.ok) {
         throw new Error(customerResult.error ?? "Failed to create the customer record.");
@@ -235,12 +243,12 @@ export const IssuedCardsPage: React.FC<IssuedCardsPageProps> = ({ customers, cam
       campaignId: campaign.id,
       campaignName: campaign.name,
       templateSnapshot: toStoredTemplate(campaign),
-    }, currentOwner.id);
+    }, activeBusiness.id, currentOwner.id);
     if (!cardResult.ok) {
       throw new Error(cardResult.error ?? "Failed to create the card.");
     }
 
-    const txResult = await insertTransaction(newCard.id, initialTransaction);
+    const txResult = await insertTransaction(newCard.id, initialTransaction, activeBusiness.id);
     if (!txResult.ok) {
       throw new Error(txResult.error ?? "Failed to record the initial transaction.");
     }
@@ -377,7 +385,7 @@ export const IssuedCardsPage: React.FC<IssuedCardsPageProps> = ({ customers, cam
     .filter((row): row is NonNullable<typeof row> => row !== null);
 
   const openPublicLink = (uniqueId: string) => {
-    const slug = currentOwner?.slug;
+    const slug = activeBusiness?.slug;
     if (!slug) return;
     window.open(buildPublicCardUrl(slug, uniqueId), '_blank');
   };

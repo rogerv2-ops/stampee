@@ -17,7 +17,7 @@ interface CustomerDirectoryProps {
 }
 
 export const CustomerDirectory: React.FC<CustomerDirectoryProps> = ({ customers, setCustomers, readOnly = false, refreshData }) => {
-  const { currentOwner } = useAuth();
+  const { currentOwner, activeBusiness } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
   const [isAddOpen, setIsAddOpen] = useState(false);
@@ -31,12 +31,12 @@ export const CustomerDirectory: React.FC<CustomerDirectoryProps> = ({ customers,
   );
 
   const handleSaveEdit = async () => {
-    if (!editingCustomer || !currentOwner) return;
+    if (!editingCustomer || !currentOwner || !activeBusiness) return;
     setError("");
     setBusy(true);
     const result = await upsertCustomer(
       { id: editingCustomer.id, name: formData.name, email: formData.email, mobile: formData.mobile, status: editingCustomer.status },
-      currentOwner.id
+      activeBusiness.id, currentOwner.id
     );
     setBusy(false);
     if (result.ok) {
@@ -52,13 +52,13 @@ export const CustomerDirectory: React.FC<CustomerDirectoryProps> = ({ customers,
   };
 
   const handleAddCustomer = async () => {
-    if (!currentOwner) return;
+    if (!currentOwner || !activeBusiness) return;
     setError("");
     setBusy(true);
     const newId = `cust-${Date.now()}`;
     const result = await upsertCustomer(
       { id: newId, name: formData.name, email: formData.email, mobile: formData.mobile, status: 'Active' },
-      currentOwner.id
+      activeBusiness.id, currentOwner.id
     );
     setBusy(false);
     if (result.ok) {

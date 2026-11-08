@@ -4,7 +4,7 @@ export type CampaignAssetKind = 'logo' | 'background';
 
 type UploadCampaignAssetInput = {
   file: File;
-  ownerId: string;
+  businessId: string;
   kind: CampaignAssetKind;
 };
 
@@ -124,12 +124,12 @@ const getManagedCampaignAssetPath = (url: string): string | null => {
 
 export async function uploadCampaignAsset({
   file,
-  ownerId,
+  businessId,
   kind,
 }: UploadCampaignAssetInput): Promise<UploadedCampaignAsset> {
   validateUploadFile(kind, file);
   const extension = resolveFileExtension(kind, file);
-  const path = `${ownerId}/${kind}/${crypto.randomUUID()}.${extension}`;
+  const path = `${businessId}/${kind}/${crypto.randomUUID()}.${extension}`;
 
   const { error: uploadError } = await supabase.storage.from(BUCKET_NAME).upload(path, file, {
     upsert: false,

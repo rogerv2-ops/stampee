@@ -1,4 +1,4 @@
-import React, { Suspense, lazy, useCallback, useEffect, useState } from 'react';
+import React, { Suspense, lazy, useCallback, useEffect, useRef, useState } from 'react';
 import { Analytics } from '@vercel/analytics/react';
 import { Sidebar, NAV_ITEMS, SidebarContent } from './components/Sidebar';
 import { Template, Customer, IssuedCard } from './types';
@@ -80,6 +80,7 @@ const AnalyticsPage = lazy(() => import('./components/AnalyticsPage').then((modu
 const LoginPage = lazy(() => import('./components/LoginPage').then((module) => ({ default: module.LoginPage })));
 const StaffLoginPage = lazy(() => import('./components/StaffLoginPage').then((module) => ({ default: module.StaffLoginPage })));
 const SettingsPage = lazy(() => import('./components/SettingsPage').then((module) => ({ default: module.SettingsPage })));
+const BusinessHubPage = lazy(() => import('./components/BusinessHubPage').then((module) => ({ default: module.BusinessHubPage })));
 const ForgotPasswordPage = lazy(() => import('./components/ForgotPasswordPage').then((module) => ({ default: module.ForgotPasswordPage })));
 const DashboardPage = lazy(() => import('./components/DashboardPage').then((module) => ({ default: module.DashboardPage })));
 const PublicCampaignSignupPage = lazy(() => import('./components/PublicCampaignSignupPage').then((module) => ({ default: module.PublicCampaignSignupPage })));
@@ -177,13 +178,21 @@ const PublicCardWrapper: React.FC = () => {
   } | null>(null);
 
   useEffect(() => {
-    if (!isSupabaseConfigured || !slug || !uniqueId) { setLoading(false); return; }
-    (async () => {
-      const { data, error } = await supabase.rpc('get_public_card', {
-        slug_input: slug,
-        card_unique_id: uniqueId,
-      });
-      if (error || !data) { setLoading(false); return; }
+    let active = true;
+    setLoading(true);
+    setCardData(null);
+    if (!isSupabaseConfigured || !slug || !uniqueId) {
+      setLoading(false);
+      return () => { active = false; };
+    }
+    void (async () => {
+      try {
+        const { data, error } = await supabase.rpc('get_public_card', {
+          slug_input: slug,
+          card_unique_id: uniqueId,
+        });
+        if (!active) return;
+        if (error || !data) { setLoading(false); return; }
 
       const card: IssuedCard = {
         id: data.card.id,
@@ -229,9 +238,13 @@ const PublicCardWrapper: React.FC = () => {
         template = fromStoredTemplate(stored);
       }
 
-      if (template) setCardData({ card, customer, template });
-      setLoading(false);
+        if (active && template) setCardData({ card, customer, template });
+        if (active) setLoading(false);
+      } catch {
+        if (active) setLoading(false);
+      }
     })();
+    return () => { active = false; };
   }, [slug, uniqueId]);
 
   if (loading) {
@@ -313,7 +326,7 @@ const PublicCardWrapper: React.FC = () => {
 const StaffScanEntryWrapper: React.FC = () => {
   const { slug, uniqueId } = useParams<{ slug: string; uniqueId: string }>();
   const navigate = useNavigate();
-  const { currentOwner, currentUser, loading } = useAuth();
+  const { currentOwner, currentUser, activeBusiness, businesses, switchBusiness, loading } = useAuth();
   const [loadingContext, setLoadingContext] = useState(true);
   const [context, setContext] = useState<Awaited<ReturnType<typeof fetchPublicScanEntryContext>>>(null);
 
@@ -347,12 +360,19 @@ const StaffScanEntryWrapper: React.FC = () => {
       return;
     }
 
-    if (currentOwner.id !== context.owner.id) {
+    if (currentOwner.id !== context.owner.ownerUserId) {
+      return;
+    }
+
+    if (activeBusiness?.id !== context.owner.id) {
+      if (businesses.some((business) => business.id === context.owner.id)) {
+        switchBusiness(context.owner.id);
+      }
       return;
     }
 
     navigate(buildIssuedCardsKioskUrl(context.card.uniqueId), { replace: true });
-  }, [context, currentOwner, currentUser, loading, loadingContext, navigate]);
+  }, [activeBusiness?.id, businesses, context, currentOwner, currentUser, loading, loadingContext, navigate, switchBusiness]);
 
   if (loading || loadingContext) {
     return (
@@ -378,7 +398,7 @@ const StaffScanEntryWrapper: React.FC = () => {
     );
   }
 
-  if (currentOwner.id !== context.owner.id) {
+  if (currentOwner.id !== context.owner.ownerUserId || activeBusiness?.id !== context.owner.id) {
     return (
       <div className="h-screen flex items-center justify-center bg-background px-6">
         <div className="w-full max-w-md rounded-2xl border bg-card p-6 text-center shadow-sm">
@@ -553,50 +573,60 @@ const DashboardLayout: React.FC = () => {
 };
 
 const AppRoutes: React.FC = () => {
-  const { currentOwner, isStaff } = useAuth();
+  const { currentOwner, activeBusiness, isStaff } = useAuth();
   const [createdCards, setCreatedCards] = useState<Template[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [dataReady, setDataReady] = useState(false);
+  const [loadedBusinessId, setLoadedBusinessId] = useState<string | null>(null);
+  const dataRequestId = useRef(0);
 
-  const sub = useSubscription(createdCards, customers);
+  const visibleCreatedCards = loadedBusinessId === activeBusiness?.id ? createdCards : [];
+  const visibleCustomers = loadedBusinessId === activeBusiness?.id ? customers : [];
+  const sub = useSubscription(visibleCreatedCards, visibleCustomers);
 
-  const loadData = useCallback(async (ownerId: string) => {
+  const loadData = useCallback(async (businessId: string) => {
+    const requestId = ++dataRequestId.current;
     setDataReady(false);
+    setLoadedBusinessId(null);
     const [storedCampaigns, storedCustomers] = await Promise.all([
-      fetchCampaigns(ownerId),
-      fetchCustomersWithCards(ownerId),
+      fetchCampaigns(businessId),
+      fetchCustomersWithCards(businessId),
     ]);
+    if (requestId !== dataRequestId.current) return;
     setCreatedCards(storedCampaigns.map(fromStoredTemplate));
     setCustomers(storedCustomers);
+    setLoadedBusinessId(businessId);
     setDataReady(true);
   }, []);
 
   useEffect(() => {
-    if (!currentOwner) {
+    if (!currentOwner || !activeBusiness) {
+      dataRequestId.current += 1;
       setCreatedCards([]);
       setCustomers([]);
+      setLoadedBusinessId(null);
       setDataReady(true);
       return;
     }
-    void loadData(currentOwner.id);
-  }, [currentOwner?.id, loadData]);
+    void loadData(activeBusiness.id);
+  }, [activeBusiness?.id, loadData]);
 
   const refreshData = useCallback(async () => {
-    if (currentOwner) {
-      await loadData(currentOwner.id);
+    if (activeBusiness) {
+      await loadData(activeBusiness.id);
     }
-  }, [currentOwner, loadData]);
+  }, [activeBusiness, loadData]);
 
   const handleSaveCard = async (template: Template) => {
-    if (!currentOwner) {
-      throw new Error('No active owner account found.');
+    if (!currentOwner || !activeBusiness) {
+      throw new Error('No active business found.');
     }
-    const isNew = !createdCards.find(c => c.id === template.id);
+    const isNew = !visibleCreatedCards.find(c => c.id === template.id);
     const saved = isNew
       ? { ...template, id: `custom-${Date.now()}`, isEnabled: template.isEnabled ?? true }
       : { ...template, isEnabled: template.isEnabled ?? true };
     const stored = toStoredTemplate(saved);
-    const result = await upsertCampaign(stored, currentOwner.id);
+    const result = await upsertCampaign(stored, activeBusiness.id, currentOwner.id);
     if (!result.ok) {
       throw new Error(result.error ?? 'Failed to save the campaign.');
     }
@@ -609,7 +639,7 @@ const AppRoutes: React.FC = () => {
   };
 
   const handleDeleteCard = async (cardId: string) => {
-    const result = await dbDeleteCampaign(cardId);
+    const result = await dbDeleteCampaign(cardId, activeBusiness?.id);
     if (!result.ok) {
       throw new Error(result.error ?? 'Failed to delete the campaign.');
     }
@@ -617,10 +647,10 @@ const AppRoutes: React.FC = () => {
   };
 
   const handleToggleCampaignEnabled = async (cardId: string, isEnabled: boolean) => {
-    if (!currentOwner) {
-      throw new Error('No active owner account found.');
+    if (!currentOwner || !activeBusiness) {
+      throw new Error('No active business found.');
     }
-    const result = await setCampaignEnabled(cardId, currentOwner.id, isEnabled);
+    const result = await setCampaignEnabled(cardId, activeBusiness.id, isEnabled);
     if (!result.ok) {
       throw new Error(result.error ?? 'Failed to update campaign status.');
     }
@@ -647,28 +677,29 @@ const AppRoutes: React.FC = () => {
         {/* Authenticated Routes */}
         <Route element={<RequireAuth />}>
           <Route element={<RequireRole allowed={["owner"]} />}>
-            <Route path="/active/:cardId" element={<ActiveCardWrapper templates={createdCards} />} />
+              <Route path="/active/:cardId" element={<ActiveCardWrapper templates={visibleCreatedCards} />} />
             <Route path="/preview/:templateId" element={<PreviewWrapper />} />
-            <Route path="/editor/:id" element={<EditorWrapper onSave={handleSaveCard} templates={createdCards} />} />
+              <Route path="/editor/:id" element={<EditorWrapper onSave={handleSaveCard} templates={visibleCreatedCards} />} />
           </Route>
 
           <Route element={<DashboardLayout />}>
             <Route element={<RequireRole allowed={["owner"]} />}>
+              <Route path="/businesses" element={withSuspense(<BusinessHubPage />)} />
             <Route path="/dashboard" element={
-                withSuspense(<DashboardPage campaigns={createdCards} customers={customers} />)
+                withSuspense(<DashboardPage campaigns={visibleCreatedCards} customers={visibleCustomers} />)
               } />
               <Route path="/campaigns" element={
                 withSuspense(
                   <MyCards
-                    cards={createdCards}
+                    cards={visibleCreatedCards}
                     onDeleteCard={handleDeleteCard}
                     onToggleCampaignEnabled={handleToggleCampaignEnabled}
                   />
                 )
               } />
               <Route path="/gallery" element={withSuspense(<TemplatesGallery />)} />
-              <Route path="/analytics" element={withSuspense(<AnalyticsPage customers={customers} campaigns={createdCards} />)} />
-              <Route path="/transactions" element={withSuspense(<TransactionsPage customers={customers} />)} />
+              <Route path="/analytics" element={withSuspense(<AnalyticsPage customers={visibleCustomers} campaigns={visibleCreatedCards} />)} />
+              <Route path="/transactions" element={withSuspense(<TransactionsPage customers={visibleCustomers} />)} />
               <Route path="/settings" element={withSuspense(<SettingsPage />)} />
             </Route>
 
@@ -676,8 +707,8 @@ const AppRoutes: React.FC = () => {
               <Route path="/issued-cards" element={
                 withSuspense(
                   <IssuedCardsPage
-                    customers={customers}
-                    campaigns={createdCards}
+                    customers={visibleCustomers}
+                    campaigns={visibleCreatedCards}
                     setCustomers={setCustomers}
                     refreshData={refreshData}
                     dataReady={dataReady}
@@ -687,7 +718,7 @@ const AppRoutes: React.FC = () => {
               <Route path="/customers" element={
                 withSuspense(
                   <CustomerDirectory
-                    customers={customers}
+                    customers={visibleCustomers}
                     setCustomers={setCustomers}
                     readOnly={isStaff}
                     refreshData={refreshData}

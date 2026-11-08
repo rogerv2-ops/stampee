@@ -63,7 +63,7 @@ const PlanBadge: React.FC = () => {
 
 export const SidebarContent: React.FC<SidebarContentProps> = ({ onNavigate, onScanQr }) => {
   const navigate = useNavigate();
-  const { currentUser, currentOwner, isStaff, logout } = useAuth();
+  const { currentUser, currentOwner, businesses, activeBusiness, switchBusiness, isStaff, logout } = useAuth();
 
   return (
     <div className="flex h-full flex-col py-8">
@@ -78,6 +78,15 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({ onNavigate, onSc
           </Link>
         </div>
         <div className="space-y-2">
+          {!isStaff && businesses.length > 0 && (
+            <div className="mb-4 rounded-xl border border-border/80 bg-background p-2">
+              <label className="px-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Business</label>
+              <select value={activeBusiness?.id ?? ''} onChange={(event) => switchBusiness(event.target.value)} className="mt-1 w-full rounded-lg border-0 bg-transparent px-2 py-2 text-sm font-medium outline-none">
+                {businesses.map((business) => <option key={business.id} value={business.id}>{business.businessName}</option>)}
+              </select>
+              <Link to="/businesses" onClick={onNavigate} className="block px-2 pb-1 text-xs text-muted-foreground hover:text-foreground">Manage businesses</Link>
+            </div>
+          )}
           {NAV_ITEMS.filter((item) => item.roles.includes(isStaff ? 'staff' : 'owner')).map((item) => (
             <NavLink to={item.path} key={item.path} onClick={onNavigate}>
               {({ isActive }) => (
@@ -110,8 +119,8 @@ export const SidebarContent: React.FC<SidebarContentProps> = ({ onNavigate, onSc
          <PlanBadge />
          {currentUser && (
           <div className="rounded-lg border border-border/80 bg-card px-3 py-3 text-xs text-muted-foreground shadow-subtle">
-              <div className="font-semibold text-foreground">{currentUser.businessName}</div>
-              <div className="font-mono">@{currentOwner?.slug ?? "staff"}</div>
+              <div className="font-semibold text-foreground">{activeBusiness?.businessName ?? currentUser.businessName}</div>
+              <div className="font-mono">@{activeBusiness?.slug ?? currentOwner?.slug ?? "staff"}</div>
               {isStaff && <div className="text-[10px] uppercase tracking-widest mt-1">Staff Access</div>}
           </div>
          )}

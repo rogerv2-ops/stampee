@@ -94,6 +94,17 @@ export type AccountStatus = 'unverified' | 'verified';
 export type UserRole = 'owner' | 'staff';
 export type AccessStatus = 'active' | 'disabled';
 export type SubscriptionTier = 'free' | 'pro';
+export interface Business {
+  id: string;
+  ownerUserId: string;
+  businessName: string;
+  slug: string;
+  status: 'active' | 'pending' | 'disabled';
+  access: AccessStatus;
+  tier: SubscriptionTier;
+  tierExpiresAt?: string;
+  createdAt: string;
+}
 
 export const TIER_LIMITS = {
   free: { campaigns: Infinity, issuedCards: Infinity, staff: Infinity },

@@ -6,20 +6,20 @@ import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { useAuth } from "./AuthProvider";
 import { buildStaffPortalUrl } from "../lib/links";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useSubscriptionContext } from "./SubscriptionContext";
 
 const DELETE_CONFIRMATION = "DELETE";
 
 export const SettingsPage: React.FC = () => {
   const navigate = useNavigate();
-  const { staffAccounts, createStaff, updateStaffPin, setStaffAccess, deleteStaff, currentOwner, currentUser, deleteAccount, updateProfileInfo, updatePassword } = useAuth();
+  const { staffAccounts, createStaff, updateStaffPin, setStaffAccess, deleteStaff, currentOwner, activeBusiness, currentUser, deleteAccount, updateProfileInfo, updatePassword } = useAuth();
   useSubscriptionContext();
 
   const [profileForm, setProfileForm] = useState({
-    businessName: currentUser?.businessName ?? "",
+    businessName: activeBusiness?.businessName ?? currentUser?.businessName ?? "",
     email: currentUser?.email ?? "",
-    slug: currentOwner?.slug ?? "",
+    slug: activeBusiness?.slug ?? "",
   });
   const [profileSuccess, setProfileSuccess] = useState("");
   const [profileError, setProfileError] = useState("");
@@ -27,11 +27,11 @@ export const SettingsPage: React.FC = () => {
 
   useEffect(() => {
     setProfileForm({
-      businessName: currentUser?.businessName ?? "",
+      businessName: activeBusiness?.businessName ?? currentUser?.businessName ?? "",
       email: currentUser?.email ?? "",
-      slug: currentOwner?.slug ?? "",
+      slug: activeBusiness?.slug ?? "",
     });
-  }, [currentUser, currentOwner]);
+  }, [currentUser?.email, currentUser?.businessName, activeBusiness?.id, activeBusiness?.businessName, activeBusiness?.slug]);
 
   const [passwordForm, setPasswordForm] = useState({ next: "", confirm: "" });
   const [passwordSuccess, setPasswordSuccess] = useState("");
@@ -171,6 +171,13 @@ export const SettingsPage: React.FC = () => {
         <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground">Settings</h1>
         <p className="text-sm text-muted-foreground">Manage your profile, password, team, and account.</p>
       </div>
+      <section className="rounded-2xl md:rounded-3xl border bg-white p-4 md:p-6 shadow-sm flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h2 className="text-lg font-semibold">Business workspaces</h2>
+          <p className="text-sm text-muted-foreground">Create another independent business or switch between your existing workspaces.</p>
+        </div>
+        <Link to="/businesses" className="inline-flex h-10 items-center justify-center rounded-full bg-primary px-5 text-sm font-medium text-primary-foreground hover:bg-primary/90">Manage businesses</Link>
+      </section>
 
       {/* Edit Profile */}
       <section className="rounded-2xl md:rounded-3xl border bg-white p-4 md:p-6 shadow-sm space-y-5">
@@ -287,10 +294,10 @@ export const SettingsPage: React.FC = () => {
               Create staff logins for issuing cards and managing stamps.
             </p>
           </div>
-          {currentOwner?.slug && currentOwner?.id && (
+          {activeBusiness?.slug && activeBusiness?.id && (
             <div className="text-xs text-muted-foreground space-y-2 md:text-right">
               <div>
-                Org ID: <span className="font-mono break-all">{currentOwner.id}</span>
+                Org ID: <span className="font-mono break-all">{activeBusiness.id}</span>
               </div>
               <div className="text-[11px] text-muted-foreground/80">
                 Share this Org ID or portal link with staff.
@@ -298,7 +305,7 @@ export const SettingsPage: React.FC = () => {
               <div className="flex items-center gap-2">
                 <Input
                   readOnly
-                  value={buildStaffPortalUrl(currentOwner.slug, currentOwner.id)}
+                  value={buildStaffPortalUrl(activeBusiness.slug, activeBusiness.id)}
                   className="text-[11px] font-mono bg-muted/40 min-w-0"
                 />
                 <Button
@@ -306,7 +313,7 @@ export const SettingsPage: React.FC = () => {
                   variant="outline"
                   size="sm"
                   className="shrink-0"
-                  onClick={() => navigator.clipboard.writeText(buildStaffPortalUrl(currentOwner.slug!, currentOwner.id))}
+                  onClick={() => navigator.clipboard.writeText(buildStaffPortalUrl(activeBusiness.slug!, activeBusiness.id))}
                 >
                   Copy
                 </Button>
@@ -584,9 +591,9 @@ export const SettingsPage: React.FC = () => {
           </DialogHeader>
           <div className="space-y-3 text-sm text-muted-foreground">
             <p>
-              You are about to delete <span className="font-semibold text-foreground">{currentOwner?.businessName}</span>.
+              You are about to delete the account for <span className="font-semibold text-foreground">{currentOwner?.businessName}</span>.
             </p>
-            <p>This will remove owner access, all staff accounts, campaigns, and customer history.</p>
+            <p>This will remove owner access, all businesses, staff accounts, campaigns, and customer history.</p>
             <p className="text-rose-600 font-medium">This action cannot be undone.</p>
           </div>
           <DialogFooter>

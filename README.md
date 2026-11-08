@@ -4,9 +4,9 @@
 
 # Stampee
 
-Stampee is a digital loyalty card and stamp card app for a single business. You can self-host the frontend and connect it to your own Supabase project.
+Stampee is a digital loyalty card and stamp card app. An owner can manage multiple independent business workspaces from a central hub; each workspace has its own slug, campaigns, customers, cards, staff, and settings. You can self-host the frontend and connect it to your own Supabase project.
 
-All access starts at `/login`. There is no marketplace or multi-tenant public signup flow for businesses.
+After signing in, owners can open `/businesses` to create or select a workspace. Public customer routes remain scoped to the selected business's slug. This is not a marketplace: each business is an independent Stampee workspace.
 
 ## Tech Stack
 
@@ -50,12 +50,14 @@ All access starts at `/login`. There is no marketplace or multi-tenant public si
 
 4. Set up the database in the Supabase SQL Editor:
    ```text
-   supabase/migration.sql   -> run first for a fresh install
-   supabase/seed.sql        -> optional, run second for the local/dev demo admin
+   supabase/migration.sql        -> run first for a fresh install
+   supabase/multi_business.sql   -> run second to enable independent workspaces
+   supabase/seed.sql             -> optional, for the local/dev demo admin
    ```
 
    Notes:
-   - [`supabase/migration.sql`](supabase/migration.sql) is the canonical fresh-install script. It includes the current schema, RLS policies, storage policies, and RPC functions.
+   - [`supabase/migration.sql`](supabase/migration.sql) creates the base schema. [`supabase/multi_business.sql`](supabase/multi_business.sql) is required for the multi-workspace feature; it backfills existing owners and data, then adds business-scoped RLS, relationships, and RPCs.
+   - Apply the multi-business migration in a development or preview Supabase project first. Back up an existing database before applying it; the migration makes `business_id` required and fails rather than silently assigning orphaned rows.
    - The smaller SQL files in [`supabase/legacy-patches/`](supabase/legacy-patches/) are upgrade or repair scripts for older or existing projects and are not part of the default new-project setup.
    - [`supabase/seed.sql`](supabase/seed.sql) is for local or development environments only because it creates a known demo account.
 
@@ -89,8 +91,9 @@ There is currently no automated test suite in the repo. `npm run build` is the m
 
 ## Product Notes
 
-- Single-business mode only
-- No public business signup flow
+- Multiple independent business workspaces per owner, managed from `/businesses`
+- Customers, campaigns, cards, staff membership, settings, and public slugs are isolated by business
+- Owners create workspaces; the product is not a marketplace
 - Staff accounts are created by the owner from `Settings -> Staff`
 - Public customer-facing routes are supported for viewing issued cards and joining enabled campaigns
 
@@ -101,7 +104,7 @@ You can deploy the app anywhere that serves a Vite SPA, including Vercel.
 1. Add the same `VITE_...` environment variables to your deployment platform.
 2. If you use Vercel, you can optionally enable Vercel Web Analytics.
 3. [`vercel.json`](vercel.json) already rewrites client-side routes to `index.html`.
-4. Make sure your Supabase project has already been initialized with [`supabase/migration.sql`](supabase/migration.sql).
+4. Make sure your Supabase project has been initialized with [`supabase/migration.sql`](supabase/migration.sql), then apply [`supabase/multi_business.sql`](supabase/multi_business.sql) in the same preview or deployment project.
 
 ## Contributing
 

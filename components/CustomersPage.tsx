@@ -57,7 +57,7 @@ const formatPhoneNumber = (value: string) => {
 
 export const CustomersPage: React.FC<CustomersPageProps> = ({ customers, campaigns, setCustomers }) => {
   const [searchQuery, setSearchQuery] = useState("");
-  const { currentUser, currentOwner } = useAuth();
+  const { currentUser, currentOwner, activeBusiness } = useAuth();
   
   // Dialog States
   const [isIssueOpen, setIsIssueOpen] = useState(false);
@@ -384,7 +384,7 @@ export const CustomersPage: React.FC<CustomersPageProps> = ({ customers, campaig
                             <DropdownMenuContent align="end" className="w-48">
                                 <DropdownMenuLabel>Actions</DropdownMenuLabel>
                                 <DropdownMenuItem onClick={() => {
-                                    const slug = currentOwner?.slug;
+                                    const slug = activeBusiness?.slug;
                                     if (!slug) return;
                                     window.open(buildPublicCardUrl(slug, card.uniqueId), '_blank');
                                 }} className="cursor-pointer">

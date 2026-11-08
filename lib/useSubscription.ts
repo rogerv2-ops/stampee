@@ -17,17 +17,17 @@ interface SubscriptionInfo {
 }
 
 export function useSubscription(campaigns: Template[], customers: Customer[]): SubscriptionInfo {
-  const { currentOwner, staffAccounts } = useAuth();
+  const { activeBusiness, staffAccounts } = useAuth();
 
   return useMemo(() => {
-    const tier: SubscriptionTier = currentOwner?.tier ?? 'free';
+    const tier: SubscriptionTier = activeBusiness?.tier ?? 'free';
     const campaignCount = campaigns.length;
     const issuedCardCount = customers.reduce((sum, c) => sum + c.cards.length, 0);
     const staffCount = staffAccounts.length;
 
     return {
       tier,
-      isProTier: true,
+      isProTier: tier === 'pro',
       campaignCount,
       issuedCardCount,
       staffCount,
@@ -38,5 +38,5 @@ export function useSubscription(campaigns: Template[], customers: Customer[]): S
       canIssueCard: true,
       canCreateStaff: true,
     };
-  }, [currentOwner?.tier, campaigns, customers, staffAccounts]);
+  }, [activeBusiness?.tier, campaigns, customers, staffAccounts]);
 }

@@ -1,9 +1,10 @@
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { TIER_LIMITS, User } from "../types";
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { TIER_LIMITS, User, Business } from "../types";
 import { isSupabaseConfigured, supabase } from "../lib/supabase";
-import { fetchProfile, fetchProfileDetailed, fetchStaffAccounts, updateProfile as dbUpdateProfile } from "../lib/db/profiles";
+import { fetchProfile, fetchProfileDetailed, fetchStaffAccounts } from "../lib/db/profiles";
 import { normalizeSlug } from "../lib/slug";
 import { buildAppUrl, DEMO_WORKSPACE_ENABLED } from "../lib/siteConfig";
+import { createBusiness as dbCreateBusiness, fetchBusinesses } from "../lib/db/businesses";
 
 type AuthUserLike = {
   id: string;
@@ -18,6 +19,10 @@ type RepairResult = { ok: true } | { ok: false; error: string };
 interface AuthContextValue {
   currentUser: User | null;
   currentOwner: User | null;
+  businesses: Business[];
+  activeBusiness: Business | null;
+  switchBusiness: (id: string) => void;
+  createBusiness: (payload: { businessName: string; slug: string }) => Promise<AuthResult>;
   isOwner: boolean;
   isStaff: boolean;
   isEmailVerified: boolean;
@@ -62,9 +67,35 @@ const isDuplicateSignupError = (message: string | undefined) => {
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [currentOwner, setCurrentOwner] = useState<User | null>(null);
+  const [businesses, setBusinesses] = useState<Business[]>([]);
+  const [activeBusiness, setActiveBusiness] = useState<Business | null>(null);
   const [staffAccounts, setStaffAccounts] = useState<User[]>([]);
   const [isEmailVerified, setIsEmailVerified] = useState(false);
   const [loading, setLoading] = useState(true);
+  const sessionGenerationRef = useRef(0);
+  const businessSelectionRef = useRef<{ id: string | null; generation: number }>({ id: null, generation: 0 });
+
+  const setSelectedBusiness = useCallback((business: Business | null) => {
+    businessSelectionRef.current = {
+      id: business?.id ?? null,
+      generation: businessSelectionRef.current.generation + 1,
+    };
+    setActiveBusiness(business);
+  }, []);
+
+  const refreshStaffAccountsForBusiness = useCallback(async (businessId: string) => {
+    const generation = businessSelectionRef.current.generation;
+    if (businessSelectionRef.current.id !== businessId) return;
+    let nextStaffAccounts: User[];
+    try {
+      nextStaffAccounts = await fetchStaffAccounts(businessId);
+    } catch {
+      return;
+    }
+    if (businessSelectionRef.current.id === businessId && businessSelectionRef.current.generation === generation) {
+      setStaffAccounts(nextStaffAccounts);
+    }
+  }, []);
 
   const fetchProfileWithRetry = useCallback(async (userId: string, attempts = 5, delayMs = 200): Promise<User | null> => {
     for (let attempt = 0; attempt < attempts; attempt += 1) {
@@ -94,9 +125,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const createMissingProfile = useCallback(async (authUser: AuthUserLike): Promise<RepairResult> => {
     const metadata = authUser.user_metadata ?? {};
-    const metadataRole = typeof metadata.role === "string" ? metadata.role : "owner";
-    const role: "owner" | "staff" = metadataRole === "staff" ? "staff" : "owner";
-    const ownerId = typeof metadata.owner_id === "string" ? metadata.owner_id : null;
+    if (metadata.role === "staff") return { ok: false, error: ACCOUNT_SETUP_ERROR };
+    const role: "owner" = "owner";
     const rawBusinessName = typeof metadata.business_name === "string" ? metadata.business_name.trim() : "";
     const fallbackName = authUser.email?.split("@")[0]?.trim() || "New Business";
     const businessName = rawBusinessName || fallbackName;
@@ -109,7 +139,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       email: (authUser.email || "").trim().toLowerCase(),
       slug,
       role,
-      owner_id: role === "staff" ? ownerId : null,
+      owner_id: null,
       status: "unverified",
       access: "active",
       tier: "free",
@@ -132,41 +162,70 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return { ok: false, error: ACCOUNT_SETUP_ERROR };
   }, []);
 
-  const loadFullSession = useCallback(async (userId: string, authUser?: AuthUserLike) => {
+  const loadFullSession = useCallback(async (userId: string, authUser?: AuthUserLike, expectedGeneration?: number) => {
+    const requestGeneration = expectedGeneration ?? ++sessionGenerationRef.current;
+    if (requestGeneration !== sessionGenerationRef.current) return;
+    const selectionAtStart = businessSelectionRef.current;
+    const isCurrentRequest = () => requestGeneration === sessionGenerationRef.current;
     await waitForAuthUser(userId);
+    if (!isCurrentRequest()) return;
     setIsEmailVerified(Boolean(authUser?.email_confirmed_at));
     let profile = await fetchProfileWithRetry(userId);
+    if (!isCurrentRequest()) return;
     if (!profile && authUser) {
       const repaired = await createMissingProfile(authUser);
       if (repaired.ok) {
         profile = await fetchProfileWithRetry(userId, 3, 150);
       }
     }
+    if (!isCurrentRequest()) return;
     if (!profile) {
       setCurrentUser(null);
       setCurrentOwner(null);
       setStaffAccounts([]);
+      setBusinesses([]);
+      setSelectedBusiness(null);
       setIsEmailVerified(false);
+      setLoading(false);
       return;
     }
 
     setCurrentUser(profile);
-
-    if (profile.role === "owner") {
-      setCurrentOwner(profile);
-      setStaffAccounts(await fetchStaffAccounts(profile.id));
-    } else if (profile.ownerId) {
-      const owner = await fetchProfile(profile.ownerId);
-      setCurrentOwner(owner);
-      if (owner) setStaffAccounts(await fetchStaffAccounts(owner.id));
+    const nextBusinesses = await fetchBusinesses(profile);
+    if (!isCurrentRequest()) return;
+    const savedBusinessId = businessSelectionRef.current.generation !== selectionAtStart.generation
+      ? businessSelectionRef.current.id
+      : window.localStorage.getItem(`stampee.active-business:${profile.id}`);
+    const nextBusiness = nextBusinesses.find((business) => business.id === savedBusinessId)
+      ?? nextBusinesses.find((business) => business.id === profile.id)
+      ?? nextBusinesses[0]
+      ?? null;
+    setBusinesses(nextBusinesses);
+    setSelectedBusiness(nextBusiness);
+    setStaffAccounts([]);
+    if (nextBusiness) {
+      window.localStorage.setItem(`stampee.active-business:${profile.id}`, nextBusiness.id);
     }
-  }, [createMissingProfile, fetchProfileWithRetry, waitForAuthUser]);
+
+    const owner = profile.role === "owner" ? profile : profile.ownerId ? await fetchProfile(profile.ownerId) : null;
+    if (!isCurrentRequest()) return;
+    setCurrentOwner(owner);
+    if (profile.role === "owner" && nextBusiness) {
+      await refreshStaffAccountsForBusiness(nextBusiness.id);
+    } else {
+      setStaffAccounts([]);
+    }
+    if (isCurrentRequest()) setLoading(false);
+  }, [createMissingProfile, fetchProfileWithRetry, refreshStaffAccountsForBusiness, setSelectedBusiness, waitForAuthUser]);
 
   useEffect(() => {
     if (!isSupabaseConfigured) {
+      sessionGenerationRef.current += 1;
       setCurrentUser(null);
       setCurrentOwner(null);
       setStaffAccounts([]);
+      setBusinesses([]);
+      setSelectedBusiness(null);
       setIsEmailVerified(false);
       setLoading(false);
       return;
@@ -175,15 +234,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     let mounted = true;
 
     const init = async () => {
+      const requestGeneration = ++sessionGenerationRef.current;
       try {
         const { data: { session } } = await supabase.auth.getSession();
-        if (session?.user && mounted) {
-          await loadFullSession(session.user.id, session.user);
+        if (session?.user && mounted && requestGeneration === sessionGenerationRef.current) {
+          await loadFullSession(session.user.id, session.user, requestGeneration);
         }
       } catch {
         // ignore — loading will still be cleared
       } finally {
-        if (mounted) setLoading(false);
+        if (mounted && requestGeneration === sessionGenerationRef.current) setLoading(false);
       }
     };
     init();
@@ -192,21 +252,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (!mounted) return;
 
       if (event === "SIGNED_IN" && session?.user) {
+        const requestGeneration = ++sessionGenerationRef.current;
         setLoading(true);
         window.setTimeout(() => {
+          if (!mounted || requestGeneration !== sessionGenerationRef.current) return;
           void (async () => {
             try {
-              await loadFullSession(session.user.id, session.user);
+              await loadFullSession(session.user.id, session.user, requestGeneration);
             } catch {
               // ignore
             } finally {
-              if (mounted) setLoading(false);
+              if (mounted && requestGeneration === sessionGenerationRef.current) setLoading(false);
             }
           })();
         }, 0);
       } else if (event === "SIGNED_OUT") {
+        sessionGenerationRef.current += 1;
         setCurrentUser(null);
         setCurrentOwner(null);
+        setBusinesses([]);
+        setSelectedBusiness(null);
         setStaffAccounts([]);
         setIsEmailVerified(false);
         setLoading(false);
@@ -217,9 +282,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     return () => {
       mounted = false;
+      sessionGenerationRef.current += 1;
       subscription.unsubscribe();
     };
-  }, [loadFullSession]);
+  }, [loadFullSession, setSelectedBusiness]);
 
   const refreshProfile = useCallback(async () => {
     if (!isSupabaseConfigured || !currentUser) return;
@@ -308,15 +374,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         await supabase.auth.signOut();
         return { ok: false, error: "This account is disabled. Ask the owner to re-enable it." };
       }
-      if (profile.ownerId !== orgId) {
+      const { data: membership, error: membershipError } = await supabase
+        .from("business_memberships")
+        .select("business_id, access")
+        .eq("business_id", orgId)
+        .eq("user_id", profile.id)
+        .eq("role", "staff")
+        .maybeSingle();
+      if (membershipError || !membership || membership.access !== "active") {
         await supabase.auth.signOut();
         return { ok: false, error: "Org ID doesn't match this staff account." };
       }
+      window.localStorage.setItem(`stampee.active-business:${profile.id}`, orgId);
+      await loadFullSession(data.user.id, data.user);
       return { ok: true, user: profile };
     } catch {
       return { ok: false, error: SIGNIN_ERROR_MESSAGE };
     }
-  }, [createMissingProfile, fetchProfileWithRetry, waitForAuthUser]);
+  }, [createMissingProfile, fetchProfileWithRetry, loadFullSession, waitForAuthUser]);
 
   const signup = useCallback(async (payload: {
     businessName: string; email: string; password: string; slug: string;
@@ -391,10 +466,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!currentOwner || currentUser?.role !== "owner") {
       return { ok: false, error: "Only owners can manage staff." };
     }
+    if (!activeBusiness) return { ok: false, error: "Select a business before adding staff." };
     if (!/^\d{4,6}$/.test(payload.pin)) {
       return { ok: false, error: "PIN should be 4-6 digits." };
     }
-    const staffLimit = TIER_LIMITS[currentOwner.tier].staff;
+    const staffLimit = TIER_LIMITS[activeBusiness.tier].staff;
     if (staffAccounts.length >= staffLimit) {
       return {
         ok: false,
@@ -406,12 +482,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       staff_email: payload.email.trim().toLowerCase(),
       staff_pin: payload.pin,
       staff_name: payload.name.trim(),
+      business_id_input: activeBusiness.id,
     });
 
     if (error) return { ok: false, error: STAFF_ACTION_ERROR };
-    setStaffAccounts(await fetchStaffAccounts(currentOwner.id));
+    await refreshStaffAccountsForBusiness(activeBusiness.id);
     return { ok: true };
-  }, [currentOwner, currentUser, staffAccounts]);
+  }, [activeBusiness, currentOwner, currentUser, refreshStaffAccountsForBusiness, staffAccounts]);
 
   const updateStaffPin = useCallback(async (staffId: string, pin: string): Promise<AuthResult> => {
     if (!isSupabaseConfigured) {
@@ -420,16 +497,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!currentOwner || currentUser?.role !== "owner") {
       return { ok: false, error: "Only owners can manage staff." };
     }
+    if (!activeBusiness) return { ok: false, error: "Select a business before updating staff." };
     if (!/^\d{4,6}$/.test(pin)) {
       return { ok: false, error: "PIN should be 4-6 digits." };
     }
     const { error } = await supabase.rpc("update_staff_pin", {
       staff_id: staffId,
       new_pin: pin,
+      business_id_input: activeBusiness.id,
     });
     if (error) return { ok: false, error: STAFF_ACTION_ERROR };
     return { ok: true };
-  }, [currentOwner, currentUser]);
+  }, [activeBusiness, currentOwner, currentUser]);
 
   const setStaffAccess = useCallback(async (staffId: string, access: "active" | "disabled"): Promise<AuthResult> => {
     if (!isSupabaseConfigured) {
@@ -438,13 +517,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!currentOwner || currentUser?.role !== "owner") {
       return { ok: false, error: "Only owners can manage staff." };
     }
-    const updateResult = await dbUpdateProfile(staffId, { access });
-    if (!updateResult.ok) {
-      return { ok: false, error: updateResult.error ?? STAFF_ACTION_ERROR };
-    }
-    setStaffAccounts(await fetchStaffAccounts(currentOwner.id));
+    if (!activeBusiness) return { ok: false, error: "Select a business before updating staff." };
+    const { error } = await supabase.rpc("set_staff_access", {
+      staff_id: staffId,
+      access_input: access,
+      business_id_input: activeBusiness.id,
+    });
+    if (error) return { ok: false, error: STAFF_ACTION_ERROR };
+    await refreshStaffAccountsForBusiness(activeBusiness.id);
     return { ok: true };
-  }, [currentOwner, currentUser]);
+  }, [activeBusiness, currentOwner, currentUser, refreshStaffAccountsForBusiness]);
 
   const deleteStaff = useCallback(async (staffId: string): Promise<AuthResult> => {
     if (!isSupabaseConfigured) {
@@ -453,13 +535,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!currentOwner || currentUser?.role !== "owner") {
       return { ok: false, error: "Only owners can manage staff." };
     }
+    if (!activeBusiness) return { ok: false, error: "Select a business before deleting staff." };
     const { error } = await supabase.rpc("delete_staff_account", {
       staff_id: staffId,
+      business_id_input: activeBusiness.id,
     });
     if (error) return { ok: false, error: STAFF_ACTION_ERROR };
-    setStaffAccounts(await fetchStaffAccounts(currentOwner.id));
+    await refreshStaffAccountsForBusiness(activeBusiness.id);
     return { ok: true };
-  }, [currentOwner, currentUser]);
+  }, [activeBusiness, currentOwner, currentUser, refreshStaffAccountsForBusiness]);
 
   const deleteAccount = useCallback(async (): Promise<AuthResult> => {
     if (!isSupabaseConfigured) {
@@ -472,7 +556,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (error) return { ok: false, error: ACCOUNT_ACTION_ERROR };
     await supabase.auth.signOut();
     return { ok: true };
-  }, [currentOwner, currentUser]);
+  }, [activeBusiness, currentOwner, currentUser]);
 
   const logout = useCallback(async () => {
     if (!isSupabaseConfigured) return;
@@ -504,10 +588,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!isSupabaseConfigured) {
       throw new Error(CONFIG_ERROR_MESSAGE);
     }
-    const { data, error } = await supabase.rpc("is_slug_available", { slug_input: slug });
+    const { data, error } = await supabase.rpc("is_business_slug_available", { slug_input: slug });
     if (error) throw error;
     return data === true;
   }, []);
+
+  const switchBusiness = useCallback((id: string) => {
+    const next = businesses.find((business) => business.id === id);
+    if (!next || !currentUser) return;
+    setSelectedBusiness(next);
+    window.localStorage.setItem(`stampee.active-business:${currentUser.id}`, id);
+    setStaffAccounts([]);
+    void refreshStaffAccountsForBusiness(next.id);
+  }, [businesses, currentUser, refreshStaffAccountsForBusiness, setSelectedBusiness]);
+  const createBusiness = useCallback(async (payload: { businessName: string; slug: string }): Promise<AuthResult> => {
+    if (!currentUser || currentUser.role !== "owner") return { ok: false, error: "Only owners can create businesses." };
+    const result = await dbCreateBusiness(payload.businessName, normalizeSlug(payload.slug));
+    if (!result.business) return { ok: false, error: result.error ?? "Unable to create this business right now. Please try again." };
+    const nextBusinesses = [...businesses.filter((business) => business.id !== result.business!.id), result.business];
+    setBusinesses(nextBusinesses);
+    setSelectedBusiness(result.business);
+    window.localStorage.setItem(`stampee.active-business:${currentUser.id}`, result.business.id);
+    setStaffAccounts([]);
+    return { ok: true, message: "Business created successfully." };
+  }, [businesses, currentUser, setSelectedBusiness]);
 
   const updateProfileInfo = useCallback(async (payload: {
     businessName?: string; email?: string; slug?: string;
@@ -517,15 +621,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
     if (!currentUser) return { ok: false, error: AUTH_REQUEST_ERROR };
 
-    const updates: Record<string, string> = {};
-    if (payload.businessName?.trim()) updates.business_name = payload.businessName.trim();
-    if (payload.email?.trim()) updates.email = payload.email.trim().toLowerCase();
-
-    const { error } = await supabase.from("profiles").update(updates).eq("id", currentUser.id);
-    if (error) return { ok: false, error: PROFILE_UPDATE_ERROR };
-    await refreshProfile();
+    const nextBusinessName = payload.businessName?.trim();
+    if (nextBusinessName && activeBusiness) {
+      const { error } = await supabase.rpc("update_business_profile", {
+        business_id_input: activeBusiness.id,
+        business_name_input: nextBusinessName,
+      });
+      if (error) return { ok: false, error: PROFILE_UPDATE_ERROR };
+      const updatedBusiness = { ...activeBusiness, businessName: nextBusinessName };
+      setBusinesses((previous) => previous.map((business) => business.id === updatedBusiness.id ? updatedBusiness : business));
+      if (businessSelectionRef.current.id === updatedBusiness.id) setActiveBusiness(updatedBusiness);
+    }
+    if (payload.email?.trim()) {
+      const { error } = await supabase.from("profiles").update({ email: payload.email.trim().toLowerCase() }).eq("id", currentUser.id);
+      if (error) return { ok: false, error: PROFILE_UPDATE_ERROR };
+      await refreshProfile();
+    }
     return { ok: true };
-  }, [currentUser, refreshProfile]);
+  }, [activeBusiness, currentUser, refreshProfile]);
 
   const updatePassword = useCallback(async (newPassword: string): Promise<AuthResult> => {
     if (!isSupabaseConfigured) {
@@ -554,6 +667,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     () => ({
       currentUser,
       currentOwner,
+      businesses,
+      activeBusiness,
+      switchBusiness,
+      createBusiness,
       isOwner: currentUser?.role === "owner",
       isStaff: currentUser?.role === "staff",
       isEmailVerified,
@@ -577,8 +694,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       refreshProfile,
     }),
     [
-      currentUser, currentOwner, isEmailVerified, loading, staffAccounts,
-      login, loginStaff, signup, loginDemo, createStaff,
+      currentUser, currentOwner, businesses, activeBusiness, isEmailVerified, loading, staffAccounts,
+      switchBusiness, createBusiness, login, loginStaff, signup, loginDemo, createStaff,
       updateStaffPin, setStaffAccess, deleteStaff, deleteAccount, logout,
       resendVerificationEmail, isSlugAvailable, updateProfileInfo,
       updatePassword, resetPassword, refreshProfile,

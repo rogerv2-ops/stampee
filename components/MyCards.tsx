@@ -171,14 +171,14 @@ export const MyCards: React.FC<MyCardsProps> = ({
   onToggleCampaignEnabled,
 }) => {
   const navigate = useNavigate();
-  const { currentOwner } = useAuth();
+  const { activeBusiness } = useAuth();
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [qrCard, setQrCard] = useState<Template | null>(null);
   const [toggleBusyId, setToggleBusyId] = useState<string | null>(null);
   const [deleteBusy, setDeleteBusy] = useState(false);
   const [deleteError, setDeleteError] = useState("");
   useSubscriptionContext();
-  const qrUrl = qrCard && currentOwner?.slug ? buildCampaignSignupUrl(currentOwner.slug, qrCard.id) : "";
+  const qrUrl = qrCard && activeBusiness?.slug ? buildCampaignSignupUrl(activeBusiness.slug, qrCard.id) : "";
   const qrDisplayUrl = qrUrl.length > 42 ? `${qrUrl.slice(0, 42)}...` : qrUrl;
 
   const confirmDelete = async () => {

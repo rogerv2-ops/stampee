@@ -6,6 +6,7 @@ export type ScannedCardStatus = 'owned' | 'foreign' | 'missing';
 export interface PublicScanEntryContext {
   owner: {
     id: string;
+    ownerUserId: string;
     slug: string;
     businessName: string;
   };
@@ -23,6 +24,7 @@ export async function insertIssuedCard(
     campaignName: string;
     templateSnapshot?: StoredTemplate;
   },
+  businessId: string,
   ownerId: string
 ): Promise<{ ok: boolean; error?: string }> {
   const { error } = await supabase.from('issued_cards').insert({
@@ -30,6 +32,7 @@ export async function insertIssuedCard(
     unique_id: card.uniqueId,
     customer_id: card.customerId,
     campaign_id: card.campaignId,
+    business_id: businessId,
     owner_id: ownerId,
     campaign_name: card.campaignName,
     stamps: 0,
@@ -48,6 +51,7 @@ export async function insertIssuedCard(
 
 export async function updateIssuedCard(
   cardId: string,
+  businessId: string,
   updates: Partial<Pick<IssuedCard, 'stamps' | 'status' | 'completedDate' | 'lastVisit'>>
 ): Promise<{ ok: boolean; error?: string }> {
   const row: Record<string, unknown> = {};
@@ -59,27 +63,31 @@ export async function updateIssuedCard(
   const { error } = await supabase
     .from('issued_cards')
     .update(row)
-    .eq('id', cardId);
+    .eq('id', cardId)
+    .eq('business_id', businessId);
   if (error) return { ok: false, error: 'Unable to update this card right now. Please try again.' };
   return { ok: true };
 }
 
-export async function deleteIssuedCard(cardId: string): Promise<{ ok: boolean; error?: string }> {
+export async function deleteIssuedCard(cardId: string, businessId: string): Promise<{ ok: boolean; error?: string }> {
   const { error } = await supabase
     .from('issued_cards')
     .delete()
-    .eq('id', cardId);
+    .eq('id', cardId)
+    .eq('business_id', businessId);
   if (error) return { ok: false, error: 'Unable to revoke this card right now. Please try again.' };
   return { ok: true };
 }
 
 export async function insertTransaction(
   cardId: string,
-  tx: Transaction
+  tx: Transaction,
+  businessId: string
 ): Promise<{ ok: boolean; error?: string }> {
   const { error } = await supabase.from('transactions').insert({
     id: tx.id,
     card_id: cardId,
+    business_id: businessId,
     type: tx.type,
     amount: tx.amount,
     date: tx.date,
@@ -94,11 +102,11 @@ export async function insertTransaction(
   return { ok: true };
 }
 
-export async function countIssuedCards(ownerId: string): Promise<number> {
+export async function countIssuedCards(businessId: string): Promise<number> {
   const { count, error } = await supabase
     .from('issued_cards')
     .select('*', { count: 'exact', head: true })
-    .eq('owner_id', ownerId);
+    .eq('business_id', businessId);
   if (error) return 0;
   return count ?? 0;
 }
@@ -135,17 +143,18 @@ export async function fetchPublicScanEntryContext(
   }
 
   const payload = data as {
-    owner?: { id?: string; slug?: string; businessName?: string };
+    owner?: { id?: string; ownerUserId?: string; slug?: string; businessName?: string };
     card?: { uniqueId?: string };
   };
 
-  if (!payload.owner?.id || !payload.owner.slug || !payload.card?.uniqueId) {
+  if (!payload.owner?.id || !payload.owner.ownerUserId || !payload.owner.slug || !payload.card?.uniqueId) {
     return null;
   }
 
   return {
     owner: {
       id: payload.owner.id,
+      ownerUserId: payload.owner.ownerUserId,
       slug: payload.owner.slug,
       businessName: payload.owner.businessName ?? '',
     },
