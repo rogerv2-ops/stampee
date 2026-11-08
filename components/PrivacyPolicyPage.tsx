@@ -10,22 +10,22 @@ const sections = [
   {
     title: "Information we collect",
     body:
-      "We collect the information needed to run Stampee, including account details, business profile information, loyalty campaign data, customer records you add to the platform, transaction history, and basic technical logs used to keep the service secure and working properly.",
+      "We collect the information needed to run Stampee, including account details, business profile information, loyalty campaign data, and operational CRM records you add to the platform. Operational CRM records include customer details, loyalty cards, stamps, redemptions, and transaction history. We may also process basic technical information needed to keep the service secure and working properly.",
   },
   {
     title: "How we use information",
     body:
-      "We use this information to provide the product, authenticate users, issue and manage loyalty cards, process customer activity, support account administration, improve reliability, and prevent abuse or unauthorized access.",
+      "We use this information to provide the product, authenticate users, issue and manage loyalty cards, record stamps and redemptions, support account administration, improve reliability, and prevent abuse or unauthorized access. Operational CRM data is used for those product functions; it is not web tracking.",
   },
   {
     title: "Sharing and service providers",
     body:
-      "We do not sell personal information. We may share data with infrastructure, analytics, authentication, or storage providers that help us operate Stampee, but only to the extent needed to deliver the service.",
+      "We do not sell personal information. We use hosting and Supabase services for the application, authentication, database, and storage. Those providers may generate technical logs separately, which can include request or network information such as an IP address. This policy does not promise that hosting or Supabase retain no IP or request logs. This version does not use optional analytics providers or a marketingSDK.",
   },
   {
-    title: "Cookies and local storage",
+    title: "Necessary storage and web tracking",
     body:
-      "Stampee may use cookies, browser storage, and similar technologies to keep users signed in, remember preferences, and support normal application behavior.",
+      "Stampee uses necessary browser storage for the Supabase session, language selection, and interface preferences such as the selected business workspace. This version does not use optional analytics or marketing cookies, does not use a marketingSDK, and does not run external web tracking. The operational Analytics page shows business metrics from product records; it is not a web-tracking service.",
   },
   {
     title: "Data retention",
@@ -40,7 +40,7 @@ const sections = [
   {
     title: "Your choices",
     body:
-      "Business owners can review and update core account and campaign information inside the product. If you need help with privacy-related requests, email {email}.",
+      "Business owners can review and update core account, campaign, customer, card, stamp, redemption, and transaction information inside the product. You can also manage or clear necessary browser storage from your browser settings, understanding that doing so may end the local Supabase session or remove saved language and interface preferences. If you need help with privacy-related requests, email {email}.",
   },
 ];
 
@@ -92,7 +92,7 @@ export const PrivacyPolicyPage: React.FC = () => {
                   {t("Overview")}
                 </h2>
                 <p className="mt-4 text-base leading-8 text-[#50545a]">
-                  {t("This page explains the categories of information Stampee processes, why that information is used, and the general safeguards applied when operating the platform. It is intended as a clear public summary for business owners and visitors using Stampee.")}
+                  {t("This page explains the categories of information Stampee processes, why that information is used, and the general safeguards applied when operating the platform. It distinguishes operational CRM records from web tracking and reflects the current version of the product.")}
                 </p>
               </div>
 
@@ -112,9 +112,9 @@ export const PrivacyPolicyPage: React.FC = () => {
               <div className="bg-white px-6 py-2 text-[#1d1d1f]">
                 <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#1d1d1f]">{t("Policy summary")}</p>
                 <ul className="mt-5 space-y-3 text-sm leading-6 text-[#50545a]">
-                  <li>{t("Used to run accounts, cards, campaigns, and customer activity.")}</li>
-                  <li>{t("Not sold as personal information.")}</li>
-                  <li>{t("Shared only with service providers needed to operate Stampee.")}</li>
+                  <li>{t("Operational CRM records include customers, cards, stamps, redemptions, and transactions.")}</li>
+                  <li>{t("No optional analytics or marketing web tracking is used in this version.")}</li>
+                  <li>{t("Hosting and Supabase may generate separate technical logs.")}</li>
                   <li>{t("Protected with reasonable operational and technical safeguards.")}</li>
                 </ul>
               </div>

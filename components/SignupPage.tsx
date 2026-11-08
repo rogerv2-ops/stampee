@@ -6,7 +6,6 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { useAuth } from "./AuthProvider";
 import { getSlugHint, isSlugValid, normalizeSlug } from "../lib/slug";
-import { trackEvent } from "../lib/analytics";
 import { APP_ORIGIN } from "../lib/siteConfig";
 import { useI18n } from "../lib/i18n";
 
@@ -111,14 +110,12 @@ export const SignupPage: React.FC = () => {
       return;
     }
     setBusy(true);
-    trackEvent("Signup Submitted", { slug: normalizedSlug });
     try {
       const result = await withTimeout(signup({ businessName, email, password, slug: normalizedSlug }));
       if (!result.ok) {
         setError(result.error);
         return;
       }
-      trackEvent("Signup Success", { slug: normalizedSlug });
       if (result.message) {
         navigate("/signup-confirmation", {
           replace: true,

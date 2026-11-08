@@ -5,7 +5,6 @@ import { AuthLayout } from "./AuthLayout";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { useAuth } from "./AuthProvider";
-import { trackEvent } from "../lib/analytics";
 import { DEMO_WORKSPACE_ENABLED } from "../lib/siteConfig";
 import { useI18n } from "../lib/i18n";
 
@@ -53,8 +52,6 @@ export const LoginClassicPage: React.FC = () => {
       const result = await withTimeout(login(email, password));
       if (!result.ok) {
         setError(result.error);
-      } else {
-        trackEvent("Login Success", { role: result.user?.role ?? "owner" });
       }
     } catch {
       setError("Unable to sign in right now. Please try again.");

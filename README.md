@@ -17,8 +17,9 @@ After signing in, owners can open `/businesses` to create or select a workspace.
 - Radix UI primitives
 - React Router
 - Supabase Auth, Postgres, Storage, and RPC functions
-- Vercel Analytics
 - Vercel deployment config via [`vercel.json`](vercel.json)
+
+This version does not load Vercel Analytics or another external web-tracking provider. Necessary browser storage supports the Supabase session, language selection, and interface preferences; it is not optional analytics or marketing tracking. The in-product `AnalyticsPage` remains available for operational business metrics such as customers, cards, stamps, and redemptions.
 
 ## Prerequisites
 
@@ -87,6 +88,8 @@ Do not use the demo seed account as-is in production.
 - `npm run build`: regenerate the sitemap, then build the production bundle
 - `npm run preview`: preview the production build locally
 - `npm run test:i18n`: validate language resolution, interpolation, catalog placeholder parity, and literal translation-call coverage
+- `npm run test:no-tracking`: verify the SDK, custom telemetry calls and obsolete analytics-consent UI are absent from runtime source and dependency manifests
+- `npm run test:no-tracking:build`: run the same checks against the compiled output after `npm run build`
 
 The i18n checks are focused unit/static checks, not a replacement for authenticated business-isolation or end-to-end tests. Run `npm run build` as well before deploying.
 
@@ -109,9 +112,8 @@ Translations are rendered from React source through `useI18n()` and the domain c
 You can deploy the app anywhere that serves a Vite SPA, including Vercel.
 
 1. Add the same `VITE_...` environment variables to your deployment platform.
-2. If you use Vercel, you can optionally enable Vercel Web Analytics.
-3. [`vercel.json`](vercel.json) already rewrites client-side routes to `index.html`.
-4. Make sure your Supabase project has been initialized with [`supabase/migration.sql`](supabase/migration.sql), then apply [`supabase/multi_business.sql`](supabase/multi_business.sql) in the same preview or deployment project.
+2. [`vercel.json`](vercel.json) rewrites client-side routes to `index.html`; no Vercel Analytics provider is required or enabled by this project.
+3. Make sure your Supabase project has been initialized with [`supabase/migration.sql`](supabase/migration.sql), then apply [`supabase/multi_business.sql`](supabase/multi_business.sql) in the same preview or deployment project.
 
 ## Contributing
 

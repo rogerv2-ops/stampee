@@ -1,5 +1,4 @@
 import React, { Suspense, lazy, useCallback, useEffect, useRef, useState } from 'react';
-import { Analytics } from '@vercel/analytics/react';
 import { Sidebar, NAV_ITEMS, SidebarContent } from './components/Sidebar';
 import { Template, Customer, IssuedCard } from './types';
 import { templates } from './data/templates';
@@ -766,7 +765,6 @@ const App: React.FC = () => {
     <AuthProvider>
       <BrowserRouter>
         <SeoManager />
-        <Analytics />
         <AppRoutes />
       </BrowserRouter>
     </AuthProvider>

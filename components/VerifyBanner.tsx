@@ -2,7 +2,6 @@ import React from "react";
 import { MailOpen, RefreshCcw } from "lucide-react";
 import { useAuth } from "./AuthProvider";
 import { Button } from "./ui/button";
-import { trackEvent } from "../lib/analytics";
 import { useI18n } from "../lib/i18n";
 
 export const VerifyBanner: React.FC = () => {
@@ -25,7 +24,6 @@ export const VerifyBanner: React.FC = () => {
       setError(result.error);
       return;
     }
-    trackEvent("Verification Email Resent", { role: currentOwner.role });
     setMessage(result.message ?? "Verification email sent.");
   };
 
