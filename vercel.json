@@ -1,6 +1,14 @@
 {
   "rewrites": [
     {
+      "source": "/platform",
+      "destination": "/api/platform/deny"
+    },
+    {
+      "source": "/platform/:path*",
+      "destination": "/api/platform/deny"
+    },
+    {
       "source": "/((?!api/|assets/|.*\\..*).*)",
       "destination": "/index.html"
     }

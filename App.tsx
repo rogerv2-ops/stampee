@@ -1,5 +1,6 @@
 import React, { Suspense, lazy, useCallback, useEffect, useRef, useState } from 'react';
 import { Sidebar, NAV_ITEMS, SidebarContent } from './components/Sidebar';
+import { PlatformAuthPage, PlatformPage } from './components/PlatformAccessPages';
 import { Template, Customer, IssuedCard } from './types';
 import { templates } from './data/templates';
 import { BrowserRouter, Routes, Route, Outlet, useParams, useNavigate, Navigate, useSearchParams, useLocation } from 'react-router-dom';
@@ -681,6 +682,8 @@ const AppRoutes: React.FC = () => {
         </div>
       )}
       <Routes>
+        <Route path="/platform/auth" element={<PlatformAuthPage />} />
+        <Route path="/platform" element={<PlatformPage />} />
         {/* Public Routes */}
         <Route path="/" element={withSuspense(<LandingPage />)} />
         <Route path="/showcase" element={withSuspense(<ShowcasePage />)} />

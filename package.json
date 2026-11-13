@@ -5,12 +5,14 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "start": "node server/index.mjs",
     "generate:sitemap": "node scripts/generate-sitemap.mjs",
     "build": "npm run generate:sitemap && vite build",
     "test:i18n": "node scripts/test-i18n.mjs",
     "test:no-tracking": "node scripts/test-no-tracking.mjs",
     "test:no-tracking:build": "node scripts/test-no-tracking.mjs --dist",
     "test:card-codes": "node scripts/test-card-codes.mjs",
+    "test:platform-security": "node --test scripts/test-platform-security.test.mjs",
     "test:db:local": "bash scripts/test-db-local.sh",
     "preview": "vite preview"
   },

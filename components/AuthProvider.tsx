@@ -267,6 +267,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           })();
         }, 0);
       } else if (event === "SIGNED_OUT") {
+        void fetch("/api/platform/session", {
+          method: "DELETE",
+          credentials: "same-origin",
+          cache: "no-store",
+        }).catch(() => undefined);
         sessionGenerationRef.current += 1;
         setCurrentUser(null);
         setCurrentOwner(null);
@@ -573,6 +578,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [activeBusiness, currentOwner, currentUser]);
 
   const logout = useCallback(async () => {
+    try {
+      await fetch("/api/platform/session", {
+        method: "DELETE",
+        credentials: "same-origin",
+        cache: "no-store",
+      });
+    } catch {
+      // The server cookie also has a short fixed lifetime if revocation is unavailable.
+    }
     if (!isSupabaseConfigured) return;
     await supabase.auth.signOut();
   }, []);

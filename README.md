@@ -17,7 +17,8 @@ After signing in, owners can open `/businesses` to create or select a workspace.
 - Radix UI primitives
 - React Router
 - Supabase Auth, Postgres, Storage, and RPC functions
-- Vercel deployment config via [`vercel.json`](vercel.json)
+- Vite SPA plus a small Node HTTP server for routes requiring server-side authorization
+- Vercel static deployment config via [`vercel.json`](vercel.json), which deliberately denies `/platform`
 
 This version does not load Vercel Analytics or another external web-tracking provider. Necessary browser storage supports the Supabase session, language selection, and interface preferences; it is not optional analytics or marketing tracking. The in-product `AnalyticsPage` remains available for operational business metrics such as customers, cards, stamps, and redemptions.
 
@@ -55,6 +56,7 @@ This version does not load Vercel Analytics or another external web-tracking pro
    supabase/multi_business.sql   -> run second to enable independent workspaces
    supabase/card_codes.sql       -> add server-owned short card codes
    supabase/staff_pin_fix.sql    -> repair provisioned staff Auth rows and PIN resets
+   supabase/platform_access_phase1.sql -> private platform access/session foundation and public signup/card/scan suspension gates
    supabase/seed.sql             -> optional, for the local/dev demo admin
    ```
 
@@ -63,7 +65,8 @@ This version does not load Vercel Analytics or another external web-tracking pro
    - Apply the multi-business migration in a development or preview Supabase project first. Back up an existing database before applying it; the migration makes `business_id` required and fails rather than silently assigning orphaned rows.
    - The smaller SQL files in [`supabase/legacy-patches/`](supabase/legacy-patches/) are upgrade or repair scripts for older or existing projects and are not part of the default new-project setup.
    - [`supabase/seed.sql`](supabase/seed.sql) is for local or development environments only because it creates a known demo account.
-   - On an existing multi-workspace installation, apply only the new additive `card_codes.sql` and `staff_pin_fix.sql` migrations; do not rerun the fresh-install schema. The PIN repair preserves owner credentials and repairs NULL Auth fields only on matching provisioned staff accounts.
+   - On an existing multi-workspace installation, apply only the additive `card_codes.sql`, `staff_pin_fix.sql`, and `platform_access_phase1.sql` migrations; do not rerun the fresh-install schema. The PIN repair preserves owner credentials and repairs NULL Auth fields only on matching provisioned staff accounts.
+   - `platform_access_phase1.sql` creates no `platform_owner` membership and seeds no user. Platform access stays deny-by-default until an exact account is separately approved. It also denies public card, scan-context, and signup RPCs for a disabled business.
 
 5. Start the dev server:
    ```bash
@@ -90,10 +93,12 @@ Do not use the demo seed account as-is in production.
 - `npm run generate:sitemap`: regenerate `public/sitemap.xml`
 - `npm run build`: regenerate the sitemap, then build the production bundle
 - `npm run preview`: preview the production build locally
+- `npm start`: serve the production build through the Node authorization gate; use this runtime for any deployment that needs `/platform`
 - `npm run test:i18n`: validate language resolution, interpolation, catalog placeholder parity, and literal translation-call coverage
 - `npm run test:no-tracking`: verify the SDK, custom telemetry calls and obsolete analytics-consent UI are absent from runtime source and dependency manifests
 - `npm run test:no-tracking:build`: run the same checks against the compiled output after `npm run build`
 - `npm run test:card-codes`: validate manual short-code normalization and legacy UUID/URL parsing
+- `npm run test:platform-security`: exercise session issuance/validation/revocation boundaries and verify direct `/platform` requests are denied before SPA HTML is served
 - `npm run test:db:local`: run the canonical migrations and SQL regressions against disposable local PostgreSQL databases (Linux/PostgreSQL, local `sudo -u postgres` access required)
 
 The i18n checks are focused unit/static checks, not a replacement for authenticated business-isolation or end-to-end tests. Run `npm run build` as well before deploying.
@@ -126,11 +131,12 @@ Staff PINs remain strings of 4–6 digits, including leading zeroes. The additiv
 
 ## Deploy
 
-You can deploy the app anywhere that serves a Vite SPA, including Vercel.
+The public merchant app can be served as a Vite SPA. The protected `/platform` route must be served through the Node HTTP server (`npm start`) so the server verifies its opaque session before returning SPA HTML. Vite dev and preview servers also install the request guard. Vercel's static config intentionally rewrites every `/platform` path to a server-generated HTTP 403 page; it does not enable platform access. Do not replace that fail-closed route with the normal SPA rewrite or serve the protected route from a static-only host.
 
-1. Add the same `VITE_...` environment variables to your deployment platform.
-2. [`vercel.json`](vercel.json) rewrites client-side routes to `index.html`; no Vercel Analytics provider is required or enabled by this project.
-3. Initialize a fresh project with [`supabase/migration.sql`](supabase/migration.sql), then apply [`supabase/multi_business.sql`](supabase/multi_business.sql), [`supabase/card_codes.sql`](supabase/card_codes.sql), and [`supabase/staff_pin_fix.sql`](supabase/staff_pin_fix.sql) in that same project.
+1. Add the app's `VITE_...` variables to the frontend build environment.
+2. Configure `STAMPEE_SUPABASE_URL`, `STAMPEE_SUPABASE_ANON_KEY`, and `STAMPEE_PLATFORM_SERVICE_ROLE_KEY` only in the server runtime. Never prefix these with `VITE_`; the service-role key is used only by narrow session RPCs and must never enter browser code, public env, or local storage.
+3. [`vercel.json`](vercel.json) keeps `/platform` closed on static Vercel deployments and rewrites other client routes to `index.html`; no Vercel Analytics provider is required or enabled by this project.
+4. Initialize a fresh project with [`supabase/migration.sql`](supabase/migration.sql), then apply [`supabase/multi_business.sql`](supabase/multi_business.sql), [`supabase/card_codes.sql`](supabase/card_codes.sql), [`supabase/staff_pin_fix.sql`](supabase/staff_pin_fix.sql), and [`supabase/platform_access_phase1.sql`](supabase/platform_access_phase1.sql) in that same project.
 
 ## Contributing
 
