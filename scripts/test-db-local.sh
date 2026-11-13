@@ -16,7 +16,7 @@ trap cleanup EXIT
 
 # postgres reads only public source/fixtures copied here, not private repository files.
 mkdir -p "$TEST_ROOT/supabase/tests"
-for file in migration multi_business card_codes staff_pin_fix; do
+for file in migration multi_business card_codes staff_pin_fix platform_access_phase1; do
   cp "$ROOT/supabase/$file.sql" "$TEST_ROOT/supabase/"
 done
 for file in setup_local staff_pin card_codes; do
@@ -33,6 +33,7 @@ run_suite() {
   "${PSQL[@]}" -d "$db" -f "$TEST_ROOT/supabase/tests/setup_local.sql" >/dev/null
   "${PSQL[@]}" -d "$db" -f "$TEST_ROOT/supabase/card_codes.sql" >/dev/null
   "${PSQL[@]}" -d "$db" -f "$TEST_ROOT/supabase/staff_pin_fix.sql" >/dev/null
+  "${PSQL[@]}" -d "$db" -f "$TEST_ROOT/supabase/platform_access_phase1.sql" >/dev/null
   "${PSQL[@]}" -d "$db" -f "$TEST_ROOT/supabase/tests/$suite"
   sudo -u postgres dropdb -h "$SOCKET" --if-exists --maintenance-db=postgres "$db" >/dev/null
 }

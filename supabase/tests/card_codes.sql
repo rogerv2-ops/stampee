@@ -88,6 +88,10 @@ begin
   if r is null or r->'card'->>'uniqueId' is distinct from '44444444-4444-4444-8444-444444444444'
     or coalesce(r->'card'->>'cardCode','') !~ '^[a-z0-9]{4}-[a-z0-9]{4}$' then
     raise exception 'TEST_FAIL_PUBLIC_UUID_PAYLOAD'; end if;
+  if public.get_public_campaign_signup_context('synthetic-owner','synthetic-campaign') is null then
+    raise exception 'TEST_FAIL_PUBLIC_SIGNUP_CONTEXT'; end if;
+  if public.get_scan_entry_context('synthetic-owner','44444444-4444-4444-8444-444444444444') is null then
+    raise exception 'TEST_FAIL_PUBLIC_SCAN_CONTEXT'; end if;
   if public.get_public_card('synthetic-second','44444444-4444-4444-8444-444444444444') is not null then
     raise exception 'TEST_FAIL_PUBLIC_WRONG_SLUG'; end if;
   signup:=public.register_public_campaign_signup('synthetic-owner','synthetic-campaign',
@@ -98,6 +102,63 @@ begin
     raise exception 'TEST_FAIL_PUBLIC_SIGNUP_CODE'; end if;
 end $$;
 reset role;
+update public.businesses set access='disabled' where id=(select business_id from card_fixture);
+set role anon;
+select set_config('request.jwt.claim.sub','',false);
+do $$
+declare r jsonb; signup jsonb;
+begin
+  if public.get_public_card('synthetic-owner','44444444-4444-4444-8444-444444444444') is not null then
+    raise exception 'TEST_FAIL_DISABLED_PUBLIC_CARD'; end if;
+  if public.get_public_campaign_signup_context('synthetic-owner','synthetic-campaign') is not null then
+    raise exception 'TEST_FAIL_DISABLED_SIGNUP_CONTEXT'; end if;
+  if public.get_scan_entry_context('synthetic-owner','44444444-4444-4444-8444-444444444444') is not null then
+    raise exception 'TEST_FAIL_DISABLED_SCAN_CONTEXT'; end if;
+  signup:=public.register_public_campaign_signup('synthetic-owner','synthetic-campaign',
+    'SYNTHETIC SUSPENDED SIGNUP','synthetic-suspended@example.test',null);
+  if signup->>'outcome' is distinct from 'error' then
+    raise exception 'TEST_FAIL_DISABLED_PUBLIC_SIGNUP'; end if;
+end $$;
+reset role;
+do $$ begin
+  if exists(select 1 from public.customers where email='synthetic-suspended@example.test') then
+    raise exception 'TEST_FAIL_DISABLED_SIGNUP_CREATED_CUSTOMER'; end if;
+  if exists(select 1 from public.issued_cards where customer_id in
+      (select id from public.customers where email='synthetic-suspended@example.test')) then
+    raise exception 'TEST_FAIL_DISABLED_SIGNUP_CREATED_CARD'; end if;
+end $$;
+set role authenticated;
+select set_config('request.jwt.claim.role','authenticated',false);
+select set_config('request.jwt.claim.sub',(select staff_id::text from card_fixture),false);
+do $$ begin
+  if public.inspect_scanned_card('44444444-4444-4444-8444-444444444444')->>'status' is distinct from 'foreign' then
+    raise exception 'TEST_FAIL_DISABLED_AUTHENTICATED_SCAN'; end if;
+end $$;
+reset role;
+update public.businesses set access='active' where id=(select business_id from card_fixture);
+
+do $$
+begin
+  if exists(select 1 from platform_internal.platform_memberships) then
+    raise exception 'TEST_FAIL_PLATFORM_MEMBERSHIP_WAS_SEEDED'; end if;
+  if exists(select 1 from platform_internal.platform_sessions) then
+    raise exception 'TEST_FAIL_PLATFORM_SESSION_WAS_SEEDED'; end if;
+  if has_table_privilege('anon','platform_internal.platform_memberships','select')
+    or has_table_privilege('authenticated','platform_internal.platform_memberships','select')
+    or has_table_privilege('anon','platform_internal.platform_sessions','select')
+    or has_table_privilege('authenticated','platform_internal.platform_sessions','select') then
+    raise exception 'TEST_FAIL_PLATFORM_TABLE_EXPOSED'; end if;
+  if has_function_privilege('anon','public.platform_create_session(uuid,text)','execute')
+    or has_function_privilege('authenticated','public.platform_create_session(uuid,text)','execute')
+    or has_function_privilege('anon','public.platform_validate_session(text)','execute')
+    or has_function_privilege('authenticated','public.platform_validate_session(text)','execute')
+    or has_function_privilege('anon','public.platform_revoke_session(text)','execute')
+    or has_function_privilege('authenticated','public.platform_revoke_session(text)','execute') then
+    raise exception 'TEST_FAIL_PLATFORM_SESSION_RPC_EXPOSED'; end if;
+  if not (select relrowsecurity and relforcerowsecurity from pg_class where oid='platform_internal.platform_memberships'::regclass)
+    or not (select relrowsecurity and relforcerowsecurity from pg_class where oid='platform_internal.platform_sessions'::regclass) then
+    raise exception 'TEST_FAIL_PLATFORM_RLS_NOT_FORCED'; end if;
+end $$;
 
 insert into public.issued_cards(id,unique_id,customer_id,campaign_id,owner_id,business_id,
   campaign_name,stamps,last_visit,status)
